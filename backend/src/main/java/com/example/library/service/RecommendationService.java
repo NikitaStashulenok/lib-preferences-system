@@ -16,21 +16,33 @@ public class RecommendationService {
     private final RecommendationProfileRepository profileRepository;
     private final BookRepository bookRepository;
     private final BookService bookService;
+    private final CurrentUserService currentUserService;
 
-    public RecommendationService(RecommendationProfileRepository profileRepository, BookRepository bookRepository, BookService bookService) {
+    public RecommendationService(RecommendationProfileRepository profileRepository,
+                                 BookRepository bookRepository,
+                                 BookService bookService,
+                                 CurrentUserService currentUserService) {
         this.profileRepository = profileRepository;
         this.bookRepository = bookRepository;
         this.bookService = bookService;
+        this.currentUserService = currentUserService;
     }
 
     @Transactional(readOnly = true)
     public Page<BookDtos.BookResponse> getRecommendations(Long userId, int page, int size) {
+        currentUserService.requireSameUserOrAdmin(userId);
+
         RecommendationProfile profile = profileRepository.findByUserId(userId).orElse(null);
         if (profile == null || profile.getPreferredGenresCsv() == null || profile.getPreferredGenresCsv().isBlank()) {
             return bookRepository.findAll(PageRequest.of(page, size)).map(book -> bookService.getById(book.getId()));
         }
-        List<String> genres = Arrays.stream(profile.getPreferredGenresCsv().split(",")).map(String::trim).filter(s -> !s.isBlank()).toList();
+
+        List<String> genres = Arrays.stream(profile.getPreferredGenresCsv().split(","))
+                .map(String::trim)
+                .filter(s -> !s.isBlank())
+                .toList();
         String primaryGenre = genres.isEmpty() ? "" : genres.getFirst();
+
         return bookRepository.findByGenresCsvContainingIgnoreCaseAndAuthorContainingIgnoreCase(primaryGenre, "", PageRequest.of(page, size))
                 .map(book -> bookService.getById(book.getId()));
     }

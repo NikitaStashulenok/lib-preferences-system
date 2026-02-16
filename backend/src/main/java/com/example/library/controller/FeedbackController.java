@@ -1,7 +1,6 @@
 package com.example.library.controller;
 
 import com.example.library.dto.FeedbackDtos;
-import com.example.library.model.Review;
 import com.example.library.service.FeedbackService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
@@ -32,10 +31,16 @@ public class FeedbackController {
     }
 
     @GetMapping("/books/{id}/reviews")
-    public Page<Review> getReviews(@PathVariable Long id,
-                                   @RequestParam(defaultValue = "0") int page,
-                                   @RequestParam(defaultValue = "10") int size) {
-        return feedbackService.getReviews(id, page, size);
+    public Page<FeedbackDtos.ReviewResponse> getReviews(@PathVariable Long id,
+                                                        @RequestParam(defaultValue = "0") int page,
+                                                        @RequestParam(defaultValue = "10") int size) {
+        return feedbackService.getReviews(id, page, size)
+                .map(review -> new FeedbackDtos.ReviewResponse(
+                        review.getId(),
+                        review.getBook().getId(),
+                        review.getUser().getId(),
+                        review.getText(),
+                        review.getCreatedAt()));
     }
 
     @PostMapping("/users/{userId}/preferences")

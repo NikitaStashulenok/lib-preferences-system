@@ -19,20 +19,29 @@ public class LoanService {
     private final UserRepository userRepository;
     private final BookRepository bookRepository;
     private final ReservationService reservationService;
+    private final CurrentUserService currentUserService;
 
-    public LoanService(LoanRepository loanRepository, UserRepository userRepository, BookRepository bookRepository,
-                       ReservationService reservationService) {
+    public LoanService(LoanRepository loanRepository,
+                       UserRepository userRepository,
+                       BookRepository bookRepository,
+                       ReservationService reservationService,
+                       CurrentUserService currentUserService) {
         this.loanRepository = loanRepository;
         this.userRepository = userRepository;
         this.bookRepository = bookRepository;
         this.reservationService = reservationService;
+        this.currentUserService = currentUserService;
     }
 
     @Transactional
     public LoanDtos.LoanResponse borrow(LoanDtos.BorrowRequest request) {
+        currentUserService.requireSameUserOrAdmin(request.userId());
+
         User user = userRepository.findById(request.userId()).orElseThrow(() -> new IllegalArgumentException("User not found"));
         Book book = bookRepository.findById(request.bookId()).orElseThrow(() -> new IllegalArgumentException("Book not found"));
-        if (book.getAvailableCopies() <= 0) throw new IllegalStateException("No copies available");
+        if (book.getAvailableCopies() <= 0) {
+            throw new IllegalStateException("No copies available");
+        }
         book.setAvailableCopies(book.getAvailableCopies() - 1);
 
         Loan loan = new Loan();
@@ -47,7 +56,9 @@ public class LoanService {
     @Transactional
     public LoanDtos.LoanResponse returnLoan(Long id) {
         Loan loan = loanRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Loan not found"));
-        if (loan.getStatus() != LoanStatus.ACTIVE) throw new IllegalStateException("Loan already closed");
+        if (loan.getStatus() != LoanStatus.ACTIVE) {
+            throw new IllegalStateException("Loan already closed");
+        }
         loan.setStatus(LoanStatus.RETURNED);
         loan.setReturnedAt(LocalDate.now());
         loan.getBook().setAvailableCopies(loan.getBook().getAvailableCopies() + 1);
@@ -58,17 +69,27 @@ public class LoanService {
     @Transactional
     public LoanDtos.LoanResponse extend(Long id) {
         Loan loan = loanRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Loan not found"));
-        if (loan.getStatus() != LoanStatus.ACTIVE) throw new IllegalStateException("Only active loans can be extended");
+        if (loan.getStatus() != LoanStatus.ACTIVE) {
+            throw new IllegalStateException("Only active loans can be extended");
+        }
         loan.setDueDate(loan.getDueDate().plusDays(7));
         return toDto(loanRepository.save(loan));
     }
 
     @Transactional(readOnly = true)
     public List<LoanDtos.LoanResponse> getUserLoans(Long userId) {
+        currentUserService.requireSameUserOrAdmin(userId);
         return loanRepository.findByUserIdOrderByBorrowedAtDesc(userId).stream().map(this::toDto).toList();
     }
 
     private LoanDtos.LoanResponse toDto(Loan loan) {
-        return new LoanDtos.LoanResponse(loan.getId(), loan.getUser().getId(), loan.getBook().getId(), loan.getStatus(), loan.getBorrowedAt(), loan.getDueDate(), loan.getReturnedAt());
+        return new LoanDtos.LoanResponse(
+                loan.getId(),
+                loan.getUser().getId(),
+                loan.getBook().getId(),
+                loan.getStatus(),
+                loan.getBorrowedAt(),
+                loan.getDueDate(),
+                loan.getReturnedAt());
     }
 }
