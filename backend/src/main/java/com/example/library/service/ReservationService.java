@@ -1,7 +1,10 @@
 package com.example.library.service;
 
 import com.example.library.dto.ReservationDtos;
-import com.example.library.model.*;
+import com.example.library.model.Book;
+import com.example.library.model.Reservation;
+import com.example.library.model.ReservationStatus;
+import com.example.library.model.User;
 import com.example.library.repository.BookRepository;
 import com.example.library.repository.ReservationRepository;
 import com.example.library.repository.UserRepository;
@@ -16,22 +19,31 @@ public class ReservationService {
     private final ReservationRepository reservationRepository;
     private final UserRepository userRepository;
     private final BookRepository bookRepository;
+    private final CurrentUserService currentUserService;
 
-    public ReservationService(ReservationRepository reservationRepository, UserRepository userRepository, BookRepository bookRepository) {
+    public ReservationService(ReservationRepository reservationRepository,
+                              UserRepository userRepository,
+                              BookRepository bookRepository,
+                              CurrentUserService currentUserService) {
         this.reservationRepository = reservationRepository;
         this.userRepository = userRepository;
         this.bookRepository = bookRepository;
+        this.currentUserService = currentUserService;
     }
 
     @Transactional
     public ReservationDtos.ReservationResponse create(ReservationDtos.CreateReservationRequest request) {
+        currentUserService.requireSameUserOrAdmin(request.userId());
+
         User user = userRepository.findById(request.userId()).orElseThrow(() -> new IllegalArgumentException("User not found"));
         Book book = bookRepository.findById(request.bookId()).orElseThrow(() -> new IllegalArgumentException("Book not found"));
         if (book.getAvailableCopies() > 0) {
             throw new IllegalStateException("Reservation is available only when all copies are unavailable");
         }
         boolean exists = reservationRepository.existsByUserIdAndBookIdAndStatus(user.getId(), book.getId(), ReservationStatus.WAITING);
-        if (exists) throw new IllegalArgumentException("Active reservation already exists for this user/book");
+        if (exists) {
+            throw new IllegalArgumentException("Active reservation already exists for this user/book");
+        }
 
         Reservation reservation = new Reservation();
         reservation.setUser(user);
@@ -43,6 +55,8 @@ public class ReservationService {
 
     @Transactional
     public ReservationDtos.ReservationResponse cancel(Long reservationId, Long userId) {
+        currentUserService.requireSameUserOrAdmin(userId);
+
         Reservation reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new IllegalArgumentException("Reservation not found"));
         if (!reservation.getUser().getId().equals(userId)) {
@@ -58,6 +72,7 @@ public class ReservationService {
 
     @Transactional(readOnly = true)
     public List<ReservationDtos.ReservationResponse> getUserReservations(Long userId) {
+        currentUserService.requireSameUserOrAdmin(userId);
         return reservationRepository.findByUserIdOrderByCreatedAtDesc(userId).stream().map(this::toDto).toList();
     }
 
@@ -82,7 +97,6 @@ public class ReservationService {
                 reservation.getCreatedAt(),
                 reservation.getNotifiedAt(),
                 reservation.getExpiresAt(),
-                reservation.getCancelledAt()
-        );
+                reservation.getCancelledAt());
     }
 }

@@ -13,13 +13,32 @@
   - reservations (create/cancel/list) + availability notifications
   - admin users + role patch
 - JPA-сущности и репозитории для основных таблиц.
-- Обработчик ошибок в унифицированном формате.
+- Flyway-миграции (`src/main/resources/db/migration`).
+- JWT access token (Bearer) + refresh token (в БД).
 - Конфигурация H2 (in-memory) для быстрого локального запуска.
+- Подготовка к PostgreSQL/Redis/OAuth2 Client через зависимости и настройки.
 
 ## Запуск
 
 ```bash
+# из корня репозитория поднять инфраструктуру
+# docker compose up -d postgres redis
+
 cd backend
+mvn spring-boot:run
+```
+
+По умолчанию backend стартует на H2. Чтобы работать с PostgreSQL, передайте переменные окружения:
+
+```bash
+DB_URL=jdbc:postgresql://localhost:5432/library \
+DB_DRIVER=org.postgresql.Driver \
+DB_USER=library_user \
+DB_PASSWORD=library_pass \
+REDIS_HOST=localhost \
+REDIS_PORT=6379 \
+JWT_SECRET=<base64-or-plain-secret-at-least-32-bytes> \
+JWT_ACCESS_EXPIRATION_SECONDS=3600 \
 mvn spring-boot:run
 ```
 
@@ -29,7 +48,6 @@ mvn spring-boot:run
 cd backend
 mvn test
 ```
-
 
 ## Maven 403 / проблемы с доступом к репозиторию
 
