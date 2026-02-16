@@ -41,6 +41,17 @@ Base URL: `/api/v1`
 - `GET /users/me/recommendations?page=0&size=20`
 - `POST /users/me/preferences` — обновить предпочтения
 
+
+## Reservations
+
+- `POST /reservations` — поставить в очередь бронирования (если нет доступных копий)
+- `POST /reservations/{id}/cancel?userId=...` — отменить бронирование
+- `GET /users/{userId}/reservations`
+
+## Availability notifications
+
+- После возврата книги система переводит первое `WAITING`-бронирование в `NOTIFIED` и выставляет `expiresAt` (+24h).
+
 ## Admin
 
 - `GET /admin/users?page=0&size=20`
