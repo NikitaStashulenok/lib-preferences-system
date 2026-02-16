@@ -35,3 +35,7 @@
 ## Backend status
 
 Backend реализован в директории `backend/` (Spring Boot 3). См. `backend/README.md`.
+
+## Frontend status
+
+Frontend реализован в директории `frontend/` (React 18 + TypeScript + Vite + Redux Toolkit + React Router). См. `frontend/README.md`.
