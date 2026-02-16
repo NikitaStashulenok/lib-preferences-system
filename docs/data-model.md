@@ -15,6 +15,7 @@
 11. `reviews`
 12. `recommendation_profiles`
 13. `refresh_tokens`
+14. `reservations`
 
 ## Связи
 
@@ -28,6 +29,7 @@
 - `users` 1:M `reviews`, `books` 1:M `reviews`.
 - `users` 1:1 `recommendation_profiles`.
 - `users` 1:M `refresh_tokens`.
+- `users` 1:M `reservations`, `books` 1:M `reservations`.
 
 ## Индексы (минимально)
 
@@ -37,4 +39,6 @@
 - `ratings(user_id, book_id)` unique
 - `reviews(book_id, created_at)`
 - `refresh_tokens(user_id, expires_at)`
+- `reservations(book_id, status, created_at)`
+- `reservations(user_id, status)`
 

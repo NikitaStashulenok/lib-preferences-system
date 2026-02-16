@@ -1,0 +1,37 @@
+package com.example.library.service;
+
+import com.example.library.dto.BookDtos;
+import com.example.library.model.RecommendationProfile;
+import com.example.library.repository.BookRepository;
+import com.example.library.repository.RecommendationProfileRepository;
+import java.util.Arrays;
+import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+public class RecommendationService {
+    private final RecommendationProfileRepository profileRepository;
+    private final BookRepository bookRepository;
+    private final BookService bookService;
+
+    public RecommendationService(RecommendationProfileRepository profileRepository, BookRepository bookRepository, BookService bookService) {
+        this.profileRepository = profileRepository;
+        this.bookRepository = bookRepository;
+        this.bookService = bookService;
+    }
+
+    @Transactional(readOnly = true)
+    public Page<BookDtos.BookResponse> getRecommendations(Long userId, int page, int size) {
+        RecommendationProfile profile = profileRepository.findByUserId(userId).orElse(null);
+        if (profile == null || profile.getPreferredGenresCsv() == null || profile.getPreferredGenresCsv().isBlank()) {
+            return bookRepository.findAll(PageRequest.of(page, size)).map(book -> bookService.getById(book.getId()));
+        }
+        List<String> genres = Arrays.stream(profile.getPreferredGenresCsv().split(",")).map(String::trim).filter(s -> !s.isBlank()).toList();
+        String primaryGenre = genres.isEmpty() ? "" : genres.getFirst();
+        return bookRepository.findByGenresCsvContainingIgnoreCaseAndAuthorContainingIgnoreCase(primaryGenre, "", PageRequest.of(page, size))
+                .map(book -> bookService.getById(book.getId()));
+    }
+}

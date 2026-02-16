@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd">
+
+  <proxies>
+    <proxy>
+      <id>default</id>
+      <active>true</active>
+      <protocol>http</protocol>
+      <host>proxy</host>
+      <port>8080</port>
+      <nonProxyHosts>localhost|127.*|*.local</nonProxyHosts>
+    </proxy>
+  </proxies>
+
+  <!--
+    ВАЖНО: в ограниченных окружениях (CI/корп.сеть) прямой доступ к Maven Central может быть запрещён.
+    В этом случае укажи рабочий Nexus/Artifactory mirror вместо прямого central.
+  -->
+  <mirrors>
+    <mirror>
+      <id>internal-mirror</id>
+      <name>Internal Maven Mirror</name>
+      <url>https://REPLACE-WITH-YOUR-NEXUS-OR-ARTIFACTORY/repository/maven-public/</url>
+      <mirrorOf>*</mirrorOf>
+    </mirror>
+  </mirrors>
+
+  <servers>
+    <!--
+    <server>
+      <id>internal-mirror</id>
+      <username>${env.MAVEN_REPO_USER}</username>
+      <password>${env.MAVEN_REPO_PASS}</password>
+    </server>
+    -->
+  </servers>
+
+  <profiles>
+    <profile>
+      <id>nexus</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <repositories>
+        <repository>
+          <id>central</id>
+          <name>Central (through mirror)</name>
+          <url>https://repo.maven.apache.org/maven2</url>
+          <releases>
+            <enabled>true</enabled>
+          </releases>
+          <snapshots>
+            <enabled>false</enabled>
+          </snapshots>
+        </repository>
+      </repositories>
+      <pluginRepositories>
+        <pluginRepository>
+          <id>central-plugins</id>
+          <name>Central Plugins (through mirror)</name>
+          <url>https://repo.maven.apache.org/maven2</url>
+          <releases>
+            <enabled>true</enabled>
+          </releases>
+          <snapshots>
+            <enabled>false</enabled>
+          </snapshots>
+        </pluginRepository>
+      </pluginRepositories>
+    </profile>
+  </profiles>
+
+  <activeProfiles>
+    <activeProfile>nexus</activeProfile>
+  </activeProfiles>
+</settings>
