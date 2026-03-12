@@ -5,6 +5,7 @@ import com.example.library.model.Role;
 import com.example.library.model.User;
 import com.example.library.repository.UserRepository;
 import java.security.SecureRandom;
+import java.util.HashSet;
 import java.util.Set;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
@@ -35,15 +36,18 @@ public class LibrarianInvitationService {
 
     @Transactional
     public AdminDtos.InviteLibrarianResponse invite(AdminDtos.InviteLibrarianRequest request) {
-        User user = userRepository.findByEmail(request.email()).orElseGet(User::new);
+        String normalizedEmail = request.email().trim();
+        User user = userRepository.findByEmail(normalizedEmail).orElseGet(User::new);
         String temporaryPassword = generateTemporaryPassword(14);
 
-        user.setEmail(request.email().trim());
+        user.setEmail(normalizedEmail);
         String nickname = request.nickname() == null || request.nickname().isBlank()
-                ? request.email().trim().split("@")[0]
+                ? normalizedEmail.split("@")[0]
                 : request.nickname().trim();
         user.setNickname(nickname);
-        user.setRoles(Set.of(Role.ROLE_LIBRARIAN));
+        Set<Role> roles = new HashSet<>(user.getRoles());
+        roles.add(Role.ROLE_LIBRARIAN);
+        user.setRoles(roles);
         user.setPasswordHash(passwordEncoder.encode(temporaryPassword));
         User savedUser = userRepository.save(user);
 

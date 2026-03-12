@@ -38,18 +38,22 @@ public class DemoUsersBootstrap implements CommandLineRunner {
             return;
         }
 
-        upsertDemoUser("anna.reader@library.local", "anna", Set.of(Role.ROLE_USER));
-        upsertDemoUser("boris.reader@library.local", "boris", Set.of(Role.ROLE_USER));
-        upsertDemoUser("librarian@library.local", "librarian", Set.of(Role.ROLE_LIBRARIAN));
-        upsertDemoUser("admin@library.local", "admin", Set.of(Role.ROLE_ADMIN));
+        createDemoUserIfMissing("anna.reader@library.local", "anna", Set.of(Role.ROLE_USER));
+        createDemoUserIfMissing("boris.reader@library.local", "boris", Set.of(Role.ROLE_USER));
+        createDemoUserIfMissing("librarian@library.local", "librarian", Set.of(Role.ROLE_LIBRARIAN));
+        createDemoUserIfMissing("admin@library.local", "admin", Set.of(Role.ROLE_ADMIN));
 
         log.info("Demo users are ready. Login with APP_DEMO_PASSWORD for anna.reader@library.local, boris.reader@library.local, librarian@library.local, admin@library.local");
     }
 
-    private void upsertDemoUser(String email, String nickname, Set<Role> roles) {
-        User user = userRepository.findByEmail(email).orElseGet(User::new);
+    private void createDemoUserIfMissing(String email, String nickname, Set<Role> roles) {
+        if (userRepository.findByEmail(email).isPresent()) {
+            return;
+        }
+
+        User user = new User();
         user.setEmail(email);
-        user.setNickname(user.getNickname() == null || user.getNickname().isBlank() ? nickname : user.getNickname());
+        user.setNickname(nickname);
         user.setPasswordHash(passwordEncoder.encode(demoPassword));
         user.setRoles(roles);
         userRepository.save(user);
