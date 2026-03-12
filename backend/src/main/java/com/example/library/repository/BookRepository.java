@@ -42,4 +42,6 @@ public interface BookRepository extends JpaRepository<Book, Long> {
 
     @Query("select distinct b.genresCsv from Book b where b.genresCsv is not null and b.genresCsv <> ''")
     List<String> findDistinctGenresCsv();
+
+    Page<Book> findByGenresCsvContainingIgnoreCaseAndAuthorContainingIgnoreCase(String genresCsv, String author, Pageable pageable);
 }

@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { getBookCoverUrl, getBookDownloadUrl } from '../api/libraryApi';
 import type { Book } from '../types/api';
 
@@ -5,21 +6,32 @@ type BookCardProps = {
   book: Book;
   onBorrow?: (bookId: number) => void;
   isRecommended?: boolean;
+  recommendationTags?: Array<'SYSTEM' | 'USER'>;
 };
 
-export function BookCard({ book, onBorrow, isRecommended }: BookCardProps) {
+export function BookCard({ book, onBorrow, isRecommended, recommendationTags }: BookCardProps) {
   return (
     <article className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md">
       <img className="h-52 w-full object-cover" src={getBookCoverUrl(book.id)} alt={`Обложка: ${book.title}`} />
       <div className="p-4">
         <h3 className="mb-2 text-lg font-semibold">
-          {book.title}
+          <Link className="hover:text-indigo-700 hover:underline" to={`/books/${book.id}`}>{book.title}</Link>
           {isRecommended && (
             <span className="ml-2 rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-700">
               рекомендация
             </span>
           )}
         </h3>
+        {!!recommendationTags?.length && (
+          <div className="mb-2 flex flex-wrap gap-2">
+            {recommendationTags.includes('USER') && (
+              <span className="rounded-full bg-indigo-100 px-2 py-1 text-xs font-semibold uppercase text-indigo-700">пользовательская</span>
+            )}
+            {recommendationTags.includes('SYSTEM') && (
+              <span className="rounded-full bg-sky-100 px-2 py-1 text-xs font-semibold uppercase text-sky-700">системная</span>
+            )}
+          </div>
+        )}
         <p className="text-sm text-slate-700">
           <span className="font-semibold">Author:</span> {book.author}
         </p>
@@ -46,8 +58,13 @@ export function BookCard({ book, onBorrow, isRecommended }: BookCardProps) {
             </button>
           )}
           {book.hasFile && (
-            <a className="rounded-md border border-indigo-300 px-3 py-2 text-sm font-medium text-indigo-700" href={getBookDownloadUrl(book.id)}>
-              Скачать книгу
+            <a
+              className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+              href={getBookDownloadUrl(book.id)}
+              rel="noreferrer"
+              target="_blank"
+            >
+              Download
             </a>
           )}
         </div>

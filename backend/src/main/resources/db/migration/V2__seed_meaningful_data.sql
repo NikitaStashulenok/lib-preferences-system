@@ -2,25 +2,25 @@
 
 -- Users
 insert into users (email, password_hash)
-select 'anna.reader@library.local', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy'
+select 'anna.reader@library.local', 'BOOTSTRAP_REPLACES_THIS_PASSWORD'
 where not exists (
     select 1 from users where email = 'anna.reader@library.local'
 );
 
 insert into users (email, password_hash)
-select 'boris.reader@library.local', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy'
+select 'boris.reader@library.local', 'BOOTSTRAP_REPLACES_THIS_PASSWORD'
 where not exists (
     select 1 from users where email = 'boris.reader@library.local'
 );
 
 insert into users (email, password_hash)
-select 'librarian@library.local', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy'
+select 'librarian@library.local', 'BOOTSTRAP_REPLACES_THIS_PASSWORD'
 where not exists (
     select 1 from users where email = 'librarian@library.local'
 );
 
 insert into users (email, password_hash)
-select 'admin@library.local', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy'
+select 'admin@library.local', 'BOOTSTRAP_REPLACES_THIS_PASSWORD'
 where not exists (
     select 1 from users where email = 'admin@library.local'
 );

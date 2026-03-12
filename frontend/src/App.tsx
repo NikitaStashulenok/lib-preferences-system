@@ -3,6 +3,8 @@ import { LoginPage } from './pages/LoginPage';
 import { CatalogPage } from './pages/CatalogPage';
 import { RecommendationsPage } from './pages/RecommendationsPage';
 import { ProfilePage } from './pages/ProfilePage';
+import { ManagementPage } from './pages/ManagementPage';
+import { BookDetailsPage } from './pages/BookDetailsPage';
 import { useAppDispatch, useAppSelector } from './app/hooks';
 import { parseJwt } from './lib/auth';
 import { logout } from './features/auth/authSlice';
@@ -34,6 +36,11 @@ export function App() {
               <NavLink className={({ isActive }) => `${navBase} ${isActive ? navActive : ''}`} to="/profile">
                 Profile
               </NavLink>
+              {(isAdmin || isLibrarian) && (
+                <NavLink className={({ isActive }) => `${navBase} ${isActive ? navActive : ''}`} to="/management">
+                  Management
+                </NavLink>
+              )}
             </>
           )}
           <span className="ml-2 rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600">
@@ -56,8 +63,10 @@ export function App() {
           <Route path="/" element={<Navigate replace to="/login" />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/catalog" element={<CatalogPage />} />
+          <Route path="/books/:id" element={<BookDetailsPage />} />
           <Route path="/recommendations" element={accessToken ? <RecommendationsPage /> : <Navigate replace to="/login" />} />
           <Route path="/profile" element={accessToken ? <ProfilePage /> : <Navigate replace to="/login" />} />
+          <Route path="/management" element={accessToken && (isAdmin || isLibrarian) ? <ManagementPage /> : <Navigate replace to="/login" />} />
         </Routes>
       </main>
     </div>

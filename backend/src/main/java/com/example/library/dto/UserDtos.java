@@ -2,6 +2,7 @@ package com.example.library.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 import java.util.Set;
 
@@ -9,7 +10,8 @@ public class UserDtos {
     public record UserProfileResponse(
             Long id,
             String email,
-            String fullName,
+            String nickname,
+            String avatarUrl,
             String firstName,
             String lastName,
             LocalDate birthDate,
@@ -24,7 +26,10 @@ public class UserDtos {
 
     public record UpdateProfileRequest(
             @Email String email,
-            String fullName,
+            @Size(min = 2, max = 50, message = "Nickname must be 2..50 chars")
+            @Pattern(regexp = "^[\\p{L}\\p{N} _.-]+$", message = "Nickname contains unsupported characters")
+            String nickname,
+            @Size(max = 1024, message = "Avatar URL is too long") String avatarUrl,
             String firstName,
             String lastName,
             LocalDate birthDate,

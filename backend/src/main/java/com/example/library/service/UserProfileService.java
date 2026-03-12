@@ -38,8 +38,11 @@ public class UserProfileService {
             user.setEmail(request.email());
         }
 
-        if (request.fullName() != null && !request.fullName().isBlank()) {
-            user.setFullName(request.fullName().trim());
+        if (request.nickname() != null) {
+            user.setNickname(normalize(request.nickname()));
+        }
+        if (request.avatarUrl() != null) {
+            user.setAvatarUrl(normalize(request.avatarUrl()));
         }
         if (request.firstName() != null) {
             user.setFirstName(normalize(request.firstName()));
@@ -81,7 +84,8 @@ public class UserProfileService {
         return new UserDtos.UserProfileResponse(
                 user.getId(),
                 user.getEmail(),
-                user.getFullName(),
+                user.getNickname(),
+                user.getAvatarUrl(),
                 user.getFirstName(),
                 user.getLastName(),
                 user.getBirthDate(),

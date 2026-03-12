@@ -15,9 +15,10 @@ public class RecommendationController {
     }
 
     @GetMapping("/{userId}/recommendations")
-    public Page<BookDtos.BookResponse> recommendations(@PathVariable Long userId,
-                                                       @RequestParam(defaultValue = "0") int page,
-                                                       @RequestParam(defaultValue = "20") int size) {
-        return recommendationService.getRecommendations(userId, page, size);
+    public Page<BookDtos.RecommendationResponse> recommendations(@PathVariable Long userId,
+                                                                 @RequestParam(defaultValue = "0") int page,
+                                                                 @RequestParam(defaultValue = "20") int size,
+                                                                 @RequestParam(defaultValue = "all") String source) {
+        return recommendationService.getRecommendations(userId, page, size, source);
     }
 }

@@ -11,7 +11,8 @@
   - ratings/reviews
   - preferences/recommendations
   - reservations (create/cancel/list) + availability notifications
-  - admin users + role patch
+  - admin users/books/loans/reservations/ratings/reviews/recommendation profiles with filters + pagination
+  - librarian invite via SMTP (`POST /api/v1/admin/librarians/invite`)
 - JPA-сущности и репозитории для основных таблиц.
 - Flyway-миграции (`src/main/resources/db/migration`).
 - JWT access token (Bearer) + refresh token (в БД).
@@ -213,6 +214,35 @@ select count(*) from users;
 select count(*) from books;
 select count(*) from loans;
 select count(*) from reservations;
+```
+
+
+### Demo users and password seed
+
+Demo users are upserted on startup by `DemoUsersBootstrap` and always get a password hashed via `PasswordEncoder` (no hardcoded bcrypt hash in migrations).
+
+Default credentials:
+- `anna.reader@library.local`
+- `boris.reader@library.local`
+- `librarian@library.local`
+- `admin@library.local`
+
+Password for all demo accounts is configured by `APP_DEMO_PASSWORD` (default: `password123`).
+
+```bash
+APP_DEMO_PASSWORD=MyStrongDemoPass123 mvn spring-boot:run
+```
+
+### SMTP settings (librarian invite)
+
+Mail settings are configurable via env vars:
+
+```bash
+MAIL_HOST=smtp.ethereal.email
+MAIL_PORT=587
+MAIL_USERNAME=kayley27@ethereal.email
+MAIL_PASSWORD=j6UHjPp7V7ftE8eb7Q.
+MAIL_FROM=library-no-reply@local.dev
 ```
 
 ## Тесты

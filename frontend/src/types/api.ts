@@ -23,6 +23,29 @@ export type Book = {
   hasCover: boolean;
 };
 
+export type RecommendationSource = 'all' | 'system' | 'user';
+
+export type RecommendationItem = {
+  book: Book;
+  sourceTags: Array<'SYSTEM' | 'USER'>;
+};
+
+
+
+export type BookDetails = {
+  book: Book;
+  averageRating: number;
+  ratingsCount: number;
+};
+
+export type Review = {
+  id: number;
+  bookId: number;
+  userId: number;
+  text: string;
+  createdAt: string;
+};
+
 export type AuthResponse = {
   accessToken: string;
   refreshToken: string;
@@ -32,6 +55,27 @@ export type Loan = {
   id: number;
   userId: number;
   bookId: number;
+  status: string;
+  borrowedAt: string;
+  dueDate: string;
+  returnedAt?: string | null;
+};
+
+
+
+export type AdminUser = {
+  id: number;
+  email: string;
+  nickname: string | null;
+  roles: string[];
+};
+
+export type AdminLoan = {
+  id: number;
+  userId: number;
+  userEmail: string;
+  bookId: number;
+  bookTitle: string;
   status: string;
   borrowedAt: string;
   dueDate: string;
@@ -66,7 +110,8 @@ export type BookSearchParams = {
 export type UserProfile = {
   id: number;
   email: string;
-  fullName: string;
+  nickname: string | null;
+  avatarUrl?: string | null;
   firstName?: string | null;
   lastName?: string | null;
   birthDate?: string | null;

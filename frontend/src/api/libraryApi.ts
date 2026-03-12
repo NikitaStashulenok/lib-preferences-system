@@ -1,5 +1,20 @@
 import { apiClient } from './client';
-import type { AuthResponse, Book, BookSearchParams, CatalogMeta, Loan, Page, PreferencesPayload, UserProfile } from '../types/api';
+import type {
+  AuthResponse,
+  Book,
+  BookSearchParams,
+  CatalogMeta,
+  Loan,
+  Page,
+  PreferencesPayload,
+  RecommendationItem,
+  RecommendationSource,
+  UserProfile,
+  AdminUser,
+  AdminLoan,
+  BookDetails,
+  Review,
+} from '../types/api';
 
 export async function login(email: string, password: string): Promise<AuthResponse> {
   const { data } = await apiClient.post<AuthResponse>('/auth/login', { email, password });
@@ -16,13 +31,33 @@ export async function fetchBooks(params: BookSearchParams): Promise<Page<Book>> 
   return data;
 }
 
+
+
+export async function fetchBookDetails(bookId: number): Promise<BookDetails> {
+  const { data } = await apiClient.get<BookDetails>(`/books/${bookId}/details`);
+  return data;
+}
+
+export async function fetchBookReviews(bookId: number, page = 0, size = 10): Promise<Page<Review>> {
+  const { data } = await apiClient.get<Page<Review>>(`/books/${bookId}/reviews`, { params: { page, size } });
+  return data;
+}
+
+export async function deleteBook(id: number): Promise<void> {
+  await apiClient.delete(`/books/${id}`);
+}
 export async function fetchCatalogMeta(): Promise<CatalogMeta> {
   const { data } = await apiClient.get<CatalogMeta>('/books/meta');
   return data;
 }
 
-export async function fetchRecommendations(userId: number, page = 0, size = 10): Promise<Page<Book>> {
-  const { data } = await apiClient.get<Page<Book>>(`/users/${userId}/recommendations`, { params: { page, size } });
+export async function fetchRecommendations(
+  userId: number,
+  page = 0,
+  size = 10,
+  source: RecommendationSource = 'all',
+): Promise<Page<RecommendationItem>> {
+  const { data } = await apiClient.get<Page<RecommendationItem>>(`/users/${userId}/recommendations`, { params: { page, size, source } });
   return data;
 }
 
@@ -39,6 +74,14 @@ export async function borrowBook(userId: number, bookId: number): Promise<void> 
 
 export async function returnBook(loanId: number): Promise<void> {
   await apiClient.post(`/loans/${loanId}/return`);
+}
+
+export async function rateBook(bookId: number, userId: number, score: number): Promise<void> {
+  await apiClient.post(`/books/${bookId}/ratings`, { score, userId });
+}
+
+export async function reviewBook(bookId: number, userId: number, text: string): Promise<void> {
+  await apiClient.post(`/books/${bookId}/reviews`, { text, userId });
 }
 
 export async function fetchLoans(userId: number): Promise<Loan[]> {
@@ -94,7 +137,8 @@ export async function fetchMe(): Promise<UserProfile> {
 }
 
 export async function updateMe(payload: {
-  fullName: string;
+  nickname: string;
+  avatarUrl?: string | null;
   email: string;
   firstName?: string;
   lastName?: string;
@@ -106,6 +150,53 @@ export async function updateMe(payload: {
   houseNumber?: string;
   phoneNumber?: string;
 }): Promise<UserProfile> {
-  const { data } = await apiClient.patch<UserProfile>('/users/me', payload);
+  const normalizedPayload = {
+    ...payload,
+    firstName: payload.firstName?.trim() || null,
+    lastName: payload.lastName?.trim() || null,
+    country: payload.country?.trim() || null,
+    city: payload.city?.trim() || null,
+    postalCode: payload.postalCode?.trim() || null,
+    street: payload.street?.trim() || null,
+    houseNumber: payload.houseNumber?.trim() || null,
+    phoneNumber: payload.phoneNumber?.trim() || null,
+    avatarUrl: payload.avatarUrl?.trim() || null,
+  };
+
+  const { data } = await apiClient.patch<UserProfile>('/users/me', normalizedPayload);
+  return data;
+}
+
+
+export async function fetchAdminUsers(params: { page: number; size: number; query?: string; role?: string }): Promise<Page<AdminUser>> {
+  const { data } = await apiClient.get<Page<AdminUser>>('/admin/users', { params });
+  return data;
+}
+
+export async function updateAdminUser(id: number, payload: { email?: string; nickname?: string; roles?: string[] }): Promise<AdminUser> {
+  const { data } = await apiClient.patch<AdminUser>(`/admin/users/${id}`, payload);
+  return data;
+}
+
+export async function deleteAdminUser(id: number): Promise<void> {
+  await apiClient.delete(`/admin/users/${id}`);
+}
+
+export async function fetchAdminBooks(params: BookSearchParams): Promise<Page<Book>> {
+  const { data } = await apiClient.get<Page<Book>>('/admin/books', { params });
+  return data;
+}
+
+export async function deleteAdminBook(id: number): Promise<void> {
+  await apiClient.delete(`/admin/books/${id}`);
+}
+
+export async function fetchAdminLoans(params: { page: number; size: number; userQuery?: string; bookQuery?: string; status?: string }): Promise<Page<AdminLoan>> {
+  const { data } = await apiClient.get<Page<AdminLoan>>('/admin/loans', { params });
+  return data;
+}
+
+export async function fetchLibrarianLoans(params: { page: number; size: number; userQuery?: string; bookQuery?: string; status?: string }): Promise<Page<AdminLoan>> {
+  const { data } = await apiClient.get<Page<AdminLoan>>('/librarian/loans', { params });
   return data;
 }

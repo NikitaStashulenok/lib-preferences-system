@@ -3,6 +3,7 @@ package com.example.library.service;
 import com.example.library.dto.BookDtos;
 import com.example.library.model.Book;
 import com.example.library.repository.BookRepository;
+import com.example.library.repository.RatingRepository;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -19,9 +20,11 @@ import org.springframework.web.multipart.MultipartFile;
 @Service
 public class BookService {
     private final BookRepository bookRepository;
+    private final RatingRepository ratingRepository;
 
-    public BookService(BookRepository bookRepository) {
+    public BookService(BookRepository bookRepository, RatingRepository ratingRepository) {
         this.bookRepository = bookRepository;
+        this.ratingRepository = ratingRepository;
     }
 
     @Transactional(readOnly = true)
@@ -76,6 +79,15 @@ public class BookService {
         return toResponse(findEntityById(id));
     }
 
+
+
+    @Transactional(readOnly = true)
+    public BookDtos.BookDetailsResponse getDetails(Long id) {
+        BookDtos.BookResponse book = getById(id);
+        Double avg = ratingRepository.findAverageScoreByBookId(id);
+        Long count = ratingRepository.countByBookId(id);
+        return new BookDtos.BookDetailsResponse(book, avg == null ? 0.0 : Math.round(avg * 100.0) / 100.0, count);
+    }
     @Transactional(readOnly = true)
     public Book findEntityById(Long id) {
         return bookRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Book not found"));

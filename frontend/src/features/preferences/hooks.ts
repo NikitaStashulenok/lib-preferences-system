@@ -1,11 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchLoans, fetchMe, fetchRecommendations, updateMe, updatePreferences } from '../../api/libraryApi';
-import type { PreferencesPayload } from '../../types/api';
+import type { PreferencesPayload, RecommendationSource } from '../../types/api';
 
-export function useRecommendationsQuery(userId: number | null) {
+export function useRecommendationsQuery(userId: number | null, page = 0, size = 20, source: RecommendationSource = 'all') {
   return useQuery({
-    queryKey: ['recommendations', userId],
-    queryFn: () => fetchRecommendations(userId ?? 0, 0, 20),
+    queryKey: ['recommendations', userId, page, size, source],
+    queryFn: () => fetchRecommendations(userId ?? 0, page, size, source),
     enabled: Boolean(userId),
   });
 }
