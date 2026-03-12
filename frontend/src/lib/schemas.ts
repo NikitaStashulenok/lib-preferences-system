@@ -45,12 +45,13 @@ export const createBookSchema = z.object({
 
 export const preferencesSchema = z.object({
   userId: z.coerce.number().int().positive('User ID должен быть > 0').optional(),
-  genres: z.array(z.string()).min(1, 'Укажите хотя бы один жанр'),
-  authors: z.array(z.string()).min(1, 'Укажите хотя бы одного автора'),
+  genres: z.array(z.string()).default([]),
+  authors: z.array(z.string()).default([]),
 });
 
 export const profileSchema = z.object({
-  fullName: z.string().trim().min(2, 'Минимум 2 символа'),
+  nickname: z.string().trim().min(2, 'Минимум 2 символа').max(50, 'Максимум 50 символов'),
+  avatarUrl: z.string().url('Некорректный URL').optional().or(z.literal('')),
   email: z.string().email('Введите корректный e-mail'),
   firstName: z.string().trim().optional(),
   lastName: z.string().trim().optional(),

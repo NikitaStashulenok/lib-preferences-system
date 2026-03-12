@@ -32,4 +32,8 @@ public class BookDtos {
                                boolean hasCover) {}
 
     public record CatalogMetaResponse(List<String> authors, List<String> genres) {}
+
+    public record RecommendationResponse(BookResponse book, List<String> sourceTags) {}
+
+    public record BookDetailsResponse(BookResponse book, Double averageRating, Long ratingsCount) {}
 }

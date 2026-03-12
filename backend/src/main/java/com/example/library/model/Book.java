@@ -5,7 +5,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 
 @Entity
@@ -37,12 +36,12 @@ public class Book {
     private String fileName;
     private String fileContentType;
 
-    @Lob
+    @Column(columnDefinition = "bytea")
     private byte[] fileData;
 
     private String coverContentType;
 
-    @Lob
+    @Column(columnDefinition = "bytea")
     private byte[] coverData;
 
     public Long getId() { return id; }

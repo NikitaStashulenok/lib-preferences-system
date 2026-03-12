@@ -50,6 +50,9 @@ public class BookController {
     @GetMapping("/{id}")
     public BookDtos.BookResponse get(@PathVariable Long id) { return bookService.getById(id); }
 
+    @GetMapping("/{id}/details")
+    public BookDtos.BookDetailsResponse details(@PathVariable Long id) { return bookService.getDetails(id); }
+
     @PostMapping
     public BookDtos.BookResponse create(@Valid @RequestBody BookDtos.BookRequest request) { return bookService.create(request); }
 

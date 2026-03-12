@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../app/hooks';
 import { setFilters } from '../features/books/booksSlice';
 import { BookCard } from '../components/BookCard';
+import { Pagination } from '../components/Pagination';
 import {
   advancedCatalogSearchSchema,
   createBookSchema,
@@ -35,8 +36,8 @@ export function CatalogPage() {
   const canManageBooks = roles.includes('ROLE_ADMIN') || roles.includes('ROLE_LIBRARIAN');
   const [advancedOpen, setAdvancedOpen] = useState(false);
 
-  const [page] = useState(0);
-  const [size] = useState(12);
+  const [page, setPage] = useState(0);
+  const [size, setSize] = useState(12);
 
   const params = useMemo(() => {
     const query = filters.searchIn === 'all' ? filters.query || undefined : undefined;
@@ -60,7 +61,7 @@ export function CatalogPage() {
   const booksQuery = useBooksQuery(params);
   const metaQuery = useCatalogMetaQuery();
   const recommendationsQuery = useRecommendationsQuery(currentUserId);
-  const recommendedIds = new Set(recommendationsQuery.data?.content.map((book) => book.id) ?? []);
+  const recommendedIds = new Set(recommendationsQuery.data?.content.map((item) => item.book.id) ?? []);
   const borrowMutation = useBorrowBookMutation(params);
   const createBookMutation = useCreateBookMutation(params);
 
@@ -105,6 +106,7 @@ export function CatalogPage() {
   });
 
   const submitSimple = (values: SimpleCatalogSearchValues) => {
+    setPage(0);
     dispatch(
       setFilters({
         query: values.searchText ?? '',
@@ -120,6 +122,7 @@ export function CatalogPage() {
   };
 
   const submitAdvanced = (values: AdvancedCatalogSearchValues) => {
+    setPage(0);
     dispatch(
       setFilters({
         query: values.keyword ?? '',
@@ -336,7 +339,25 @@ export function CatalogPage() {
       {booksQuery.isLoading && <p className="text-sm text-slate-600">Loading books...</p>}
       {booksQuery.error && <p className="text-sm text-red-700">Ошибка загрузки каталога.</p>}
 
-      <div className="mb-3 text-sm text-slate-600">Найдено записей: {booksQuery.data?.totalElements ?? 0}</div>
+
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div className="text-sm text-slate-600">Найдено записей: {booksQuery.data?.totalElements ?? 0}</div>
+        <label className="flex items-center gap-2 text-sm">
+          <span className="text-slate-600">На странице</span>
+          <select
+            className="rounded-md border border-slate-300 px-2 py-1"
+            value={size}
+            onChange={(event) => {
+              setSize(Number(event.target.value));
+              setPage(0);
+            }}
+          >
+            <option value={12}>12</option>
+            <option value={24}>24</option>
+            <option value={36}>36</option>
+          </select>
+        </label>
+      </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         {booksQuery.data?.content.map((book) => (
@@ -346,6 +367,12 @@ export function CatalogPage() {
 
       {borrowMutation.isSuccess && <p className="mt-3 text-sm text-green-700">Книга успешно выдана.</p>}
       {borrowMutation.error && <p className="mt-3 text-sm text-red-700">Не удалось выдать книгу.</p>}
+
+      <Pagination
+        page={booksQuery.data?.number ?? page}
+        totalPages={booksQuery.data?.totalPages ?? 0}
+        onPageChange={setPage}
+      />
     </section>
   );
 }
