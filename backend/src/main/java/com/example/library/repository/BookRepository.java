@@ -37,6 +37,17 @@ public interface BookRepository extends JpaRepository<Book, Long> {
             Pageable pageable
     );
 
+    @Query("""
+            select b from Book b
+            where (:genre is null or :genre = '' or lower(coalesce(b.genresCsv, '')) like lower(concat('%', :genre, '%')))
+              and (:author is null or :author = '' or lower(b.author) like lower(concat('%', :author, '%')))
+            """)
+    Page<Book> findRecommendations(
+            @Param("genre") String genre,
+            @Param("author") String author,
+            Pageable pageable
+    );
+
     @Query("select distinct b.author from Book b order by b.author asc")
     List<String> findDistinctAuthors();
 

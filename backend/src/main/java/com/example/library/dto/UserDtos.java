@@ -35,4 +35,18 @@ public class UserDtos {
             String houseNumber,
             @Pattern(regexp = "^\\+?[0-9()\\-\\s]{5,25}$", message = "Введите корректный номер телефона") String phoneNumber
     ) {}
+
+    public record AdminPatchUserRequest(
+            @Email String email,
+            String fullName,
+            String firstName,
+            String lastName,
+            LocalDate birthDate,
+            String country,
+            String city,
+            String postalCode,
+            String street,
+            String houseNumber,
+            @Pattern(regexp = "^\\+?[0-9()\\-\\s]{5,25}$", message = "Введите корректный номер телефона") String phoneNumber
+    ) {}
 }

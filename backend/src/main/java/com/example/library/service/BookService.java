@@ -184,7 +184,7 @@ public class BookService {
         }
     }
 
-    private BookDtos.BookResponse toResponse(Book b) {
+    public BookDtos.BookResponse toResponse(Book b) {
         List<String> genres = b.getGenresCsv() == null || b.getGenresCsv().isBlank()
                 ? List.of()
                 : Arrays.stream(b.getGenresCsv().split(",")).map(String::trim).toList();

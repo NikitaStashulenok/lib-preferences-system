@@ -34,7 +34,7 @@ public class RecommendationService {
 
         RecommendationProfile profile = profileRepository.findByUserId(userId).orElse(null);
         if (profile == null) {
-            return bookRepository.findAll(PageRequest.of(page, size)).map(book -> bookService.getById(book.getId()));
+            return bookRepository.findAll(PageRequest.of(page, size)).map(bookService::toResponse);
         }
 
         List<String> genres = profile.getPreferredGenresCsv() == null ? List.of() : Arrays.stream(profile.getPreferredGenresCsv().split(","))
@@ -50,10 +50,10 @@ public class RecommendationService {
         String primaryAuthor = authors.isEmpty() ? "" : authors.getFirst();
 
         if (primaryGenre.isBlank() && primaryAuthor.isBlank()) {
-            return bookRepository.findAll(PageRequest.of(page, size)).map(book -> bookService.getById(book.getId()));
+            return bookRepository.findAll(PageRequest.of(page, size)).map(bookService::toResponse);
         }
 
-        return bookRepository.findByGenresCsvContainingIgnoreCaseAndAuthorContainingIgnoreCase(primaryGenre, primaryAuthor, PageRequest.of(page, size))
-                .map(book -> bookService.getById(book.getId()));
+        return bookRepository.findRecommendations(primaryGenre, primaryAuthor, PageRequest.of(page, size))
+                .map(bookService::toResponse);
     }
 }
