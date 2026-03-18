@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { borrowBook, createBookWithUpload, createBookRating, deleteBook, fetchBookDetails, fetchBookReviews, fetchBooks, fetchCatalogMeta, returnBook, updateBook, updateMyBookRating } from '../../api/libraryApi';
+import { createBookWithUpload, createReservation, deleteBook, fetchBookDetails, fetchBookReviews, fetchBooks, fetchCatalogMeta, rateBook, returnBook, reviewBook, updateBook } from '../../api/libraryApi';
 import type { BookSearchParams } from '../../types/api';
 
 export function useBooksQuery(params: BookSearchParams) {
@@ -16,14 +16,16 @@ export function useCatalogMetaQuery() {
   });
 }
 
-export function useBorrowBookMutation(params: BookSearchParams) {
+export function useOrderBookMutation(params: BookSearchParams) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ userId, bookId }: { userId: number; bookId: number }) => borrowBook(userId, bookId),
-    onSuccess: () => {
+    mutationFn: ({ userId, bookId }: { userId: number; bookId: number }) => createReservation(userId, bookId),
+    onSuccess: (_, variables) => {
       void queryClient.invalidateQueries({ queryKey: ['books', params] });
       void queryClient.invalidateQueries({ queryKey: ['loans'] });
+      void queryClient.invalidateQueries({ queryKey: ['admin-loans'] });
+      void queryClient.invalidateQueries({ queryKey: ['librarian-loans'] });
     },
   });
 }
@@ -40,7 +42,9 @@ export function useCreateBookMutation(params: BookSearchParams) {
   });
 }
 
-export function useReturnBookWithFeedbackMutation() {
+
+
+export function useRateBookWithFeedbackMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -50,7 +54,10 @@ export function useReturnBookWithFeedbackMutation() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['books'] });
       void queryClient.invalidateQueries({ queryKey: ['loans'] });
+      void queryClient.invalidateQueries({ queryKey: ['admin-loans'] });
+      void queryClient.invalidateQueries({ queryKey: ['librarian-loans'] });
       void queryClient.invalidateQueries({ queryKey: ['recommendations'] });
+      void queryClient.invalidateQueries({ queryKey: ['librarian-reservations'] });
     },
   });
 }
