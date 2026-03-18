@@ -20,7 +20,7 @@ export function BookCard({ book, onOrder, isRecommended, recommendationTags }: B
 
   return (
     <article className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md">
-      <img className="h-52 w-full object-cover" src={getBookCoverUrl(book.id)} alt={`Обложка: ${book.title}`} />
+      <img className="h-52 w-full" src={getBookCoverUrl(book.id)} alt={`Обложка: ${book.title}`} />
       <div className="p-4">
         <h3 className="mb-2 text-lg font-semibold">
           <Link className="hover:text-indigo-700 hover:underline" to={`/books/${book.id}`}>{book.title}</Link>
