@@ -14,6 +14,7 @@ import type {
   AdminLoan,
   BookDetails,
   Review,
+  LibrarianCirculationItem,
 } from '../types/api';
 
 export async function login(email: string, password: string): Promise<AuthResponse> {
@@ -218,7 +219,17 @@ export async function fetchAdminLoans(params: { page: number; size: number; user
   return data;
 }
 
-export async function fetchLibrarianLoans(params: { page: number; size: number; userQuery?: string; bookQuery?: string; status?: string }): Promise<Page<AdminLoan>> {
-  const { data } = await apiClient.get<Page<AdminLoan>>('/librarian/loans', { params });
+export async function fetchLibrarianLoans(params: { page: number; size: number; userQuery?: string; bookQuery?: string; status?: string }): Promise<Page<LibrarianCirculationItem>> {
+  const { data } = await apiClient.get<Page<LibrarianCirculationItem>>('/librarian/loans', { params });
+  return data;
+}
+
+export async function issueLibrarianReservation(id: number): Promise<LibrarianCirculationItem> {
+  const { data } = await apiClient.post<LibrarianCirculationItem>(`/librarian/reservations/${id}/issue`);
+  return data;
+}
+
+export async function returnLibrarianLoan(id: number): Promise<LibrarianCirculationItem> {
+  const { data } = await apiClient.post<LibrarianCirculationItem>(`/librarian/loans/${id}/return`);
   return data;
 }

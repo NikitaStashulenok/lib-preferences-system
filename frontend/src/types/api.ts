@@ -82,6 +82,23 @@ export type AdminLoan = {
   returnedAt?: string | null;
 };
 
+export type LibrarianCirculationItem = {
+  id: number;
+  kind: 'LOAN' | 'RESERVATION';
+  userId: number;
+  userEmail: string;
+  bookId: number;
+  bookTitle: string;
+  status: string;
+  borrowedAt?: string | null;
+  dueDate?: string | null;
+  returnedAt?: string | null;
+  createdAt?: string | null;
+  notifiedAt?: string | null;
+  expiresAt?: string | null;
+  cancelledAt?: string | null;
+};
+
 export type PreferencesPayload = {
   preferredGenres: string[];
   favoriteAuthors: string[];
