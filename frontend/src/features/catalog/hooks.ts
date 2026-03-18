@@ -42,12 +42,13 @@ export function useCreateBookMutation(params: BookSearchParams) {
   });
 }
 
-export function useReturnBookWithFeedbackMutation() {
+
+
+export function useRateBookWithFeedbackMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ loanId, bookId, userId, score, reviewText }: { loanId: number; bookId: number; userId: number; score: number; reviewText?: string }) => {
-      await returnBook(loanId);
+    mutationFn: async ({ bookId, userId, score, reviewText }: { bookId: number; userId: number; score: number; reviewText?: string }) => {
       await rateBook(bookId, userId, score);
       const trimmed = reviewText?.trim();
       if (trimmed) {
@@ -55,8 +56,8 @@ export function useReturnBookWithFeedbackMutation() {
       }
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['books'] });
-      void queryClient.invalidateQueries({ queryKey: ['loans'] });
+      void queryClient.invalidateQueries({ queryKey: ['book-reviews'] });
+      void queryClient.invalidateQueries({ queryKey: ['book-details'] });
       void queryClient.invalidateQueries({ queryKey: ['recommendations'] });
       void queryClient.invalidateQueries({ queryKey: ['librarian-reservations'] });
     },
