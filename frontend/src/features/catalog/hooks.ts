@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { borrowBook, createBookWithUpload, deleteBook, fetchBookDetails, fetchBookReviews, fetchBooks, fetchCatalogMeta, rateBook, returnBook, reviewBook, updateBook } from '../../api/libraryApi';
+import { createBookWithUpload, createReservation, deleteBook, fetchBookDetails, fetchBookReviews, fetchBooks, fetchCatalogMeta, rateBook, returnBook, reviewBook, updateBook } from '../../api/libraryApi';
 import type { BookSearchParams } from '../../types/api';
 
 export function useBooksQuery(params: BookSearchParams) {
@@ -16,14 +16,16 @@ export function useCatalogMetaQuery() {
   });
 }
 
-export function useBorrowBookMutation(params: BookSearchParams) {
+export function useOrderBookMutation(params: BookSearchParams) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ userId, bookId }: { userId: number; bookId: number }) => borrowBook(userId, bookId),
-    onSuccess: () => {
+    mutationFn: ({ userId, bookId }: { userId: number; bookId: number }) => createReservation(userId, bookId),
+    onSuccess: (_, variables) => {
       void queryClient.invalidateQueries({ queryKey: ['books', params] });
       void queryClient.invalidateQueries({ queryKey: ['loans'] });
+      void queryClient.invalidateQueries({ queryKey: ['admin-loans'] });
+      void queryClient.invalidateQueries({ queryKey: ['librarian-loans'] });
     },
   });
 }
@@ -40,22 +42,43 @@ export function useCreateBookMutation(params: BookSearchParams) {
   });
 }
 
-export function useReturnBookWithFeedbackMutation() {
+
+
+export function useRateBookWithFeedbackMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ loanId, bookId, userId, score, reviewText }: { loanId: number; bookId: number; userId: number; score: number; reviewText?: string }) => {
+    mutationFn: async ({ loanId }: { loanId: number }) => {
       await returnBook(loanId);
-      await rateBook(bookId, userId, score);
-      const trimmed = reviewText?.trim();
-      if (trimmed) {
-        await reviewBook(bookId, userId, trimmed);
-      }
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['books'] });
       void queryClient.invalidateQueries({ queryKey: ['loans'] });
+      void queryClient.invalidateQueries({ queryKey: ['admin-loans'] });
+      void queryClient.invalidateQueries({ queryKey: ['librarian-loans'] });
       void queryClient.invalidateQueries({ queryKey: ['recommendations'] });
+      void queryClient.invalidateQueries({ queryKey: ['librarian-reservations'] });
+    },
+  });
+}
+
+export function useSaveBookRatingMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ bookId, userId, score, hasExistingRating }: { bookId: number; userId: number; score: number; hasExistingRating: boolean }) => {
+      if (hasExistingRating) {
+        await updateMyBookRating(bookId, userId, score);
+        return;
+      }
+
+      await createBookRating(bookId, userId, score);
+    },
+    onSuccess: (_, variables) => {
+      void queryClient.invalidateQueries({ queryKey: ['book-details', variables.bookId] });
+      void queryClient.invalidateQueries({ queryKey: ['book-reviews', variables.bookId] });
+      void queryClient.invalidateQueries({ queryKey: ['recommendations'] });
+      void queryClient.invalidateQueries({ queryKey: ['loans'] });
     },
   });
 }

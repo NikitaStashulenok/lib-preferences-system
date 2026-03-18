@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { login, register } from '../api/libraryApi';
 import { useAppDispatch, useAppSelector } from '../app/hooks';
 import { setTokens } from '../features/auth/authSlice';
+import { applyServerFieldErrors, extractApiError } from '../lib/apiErrors';
 import { authSchema, type AuthFormValues } from '../lib/schemas';
 
 export function LoginPage() {
@@ -15,6 +16,8 @@ export function LoginPage() {
   const {
     register: registerField,
     handleSubmit,
+    setError,
+    clearErrors,
     formState: { errors },
   } = useForm<AuthFormValues>({
     resolver: zodResolver(authSchema),
@@ -40,6 +43,24 @@ export function LoginPage() {
     },
   });
 
+  const submitLogin = (values: AuthFormValues) => {
+    clearErrors();
+    loginMutation.mutate(values, {
+      onError: (error) => {
+        applyServerFieldErrors(error, setError);
+      },
+    });
+  };
+
+  const submitRegister = (values: AuthFormValues) => {
+    clearErrors();
+    registerMutation.mutate(values, {
+      onError: (error) => {
+        applyServerFieldErrors(error, setError);
+      },
+    });
+  };
+
   return (
     <section className="rounded-xl bg-white p-5 shadow-sm">
       <h2 className="mb-4 text-xl font-bold">Authentication</h2>
@@ -64,7 +85,7 @@ export function LoginPage() {
           <button
             className="rounded-md bg-slate-900 px-4 py-2 text-white disabled:opacity-50"
             disabled={loginMutation.isPending}
-            onClick={handleSubmit((values) => loginMutation.mutate(values))}
+            onClick={handleSubmit(submitLogin)}
             type="button"
           >
             Login
@@ -73,7 +94,7 @@ export function LoginPage() {
           <button
             className="rounded-md bg-indigo-600 px-4 py-2 text-white disabled:opacity-50"
             disabled={registerMutation.isPending}
-            onClick={handleSubmit((values) => registerMutation.mutate(values))}
+            onClick={handleSubmit(submitRegister)}
             type="button"
           >
             Register
@@ -82,8 +103,8 @@ export function LoginPage() {
       </form>
 
       {accessToken && <p className="mt-3 text-sm text-green-700">Успешная авторизация.</p>}
-      {loginMutation.error && <p className="mt-2 text-sm text-red-700">Ошибка входа.</p>}
-      {registerMutation.error && <p className="mt-2 text-sm text-red-700">Ошибка регистрации.</p>}
+      {loginMutation.error && <p className="mt-2 text-sm text-red-700">{extractApiError(loginMutation.error, 'Ошибка входа.')}</p>}
+      {registerMutation.error && <p className="mt-2 text-sm text-red-700">{extractApiError(registerMutation.error, 'Ошибка регистрации.')}</p>}
     </section>
   );
 }

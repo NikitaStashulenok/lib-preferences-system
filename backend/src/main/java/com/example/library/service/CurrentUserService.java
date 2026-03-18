@@ -25,14 +25,28 @@ public class CurrentUserService {
         return user.getId();
     }
 
-    public boolean isAdmin() {
+    public Long getCurrentUserIdOrNull() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null) {
-            return false;
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return null;
         }
-        return authentication.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .anyMatch("ROLE_ADMIN"::equals);
+
+        String email = authentication.getName();
+        if (email == null || email.isBlank() || "anonymousUser".equals(email)) {
+            return null;
+        }
+
+        return userRepository.findByEmail(email)
+                .map(User::getId)
+                .orElse(null);
+    }
+
+    public boolean isAdmin() {
+        return hasAnyRole("ROLE_ADMIN");
+    }
+
+    public boolean isLibrarianOrAdmin() {
+        return hasAnyRole("ROLE_LIBRARIAN", "ROLE_ADMIN");
     }
 
     public void requireSameUserOrAdmin(Long targetUserId) {
@@ -43,5 +57,22 @@ public class CurrentUserService {
         if (!currentUserId.equals(targetUserId)) {
             throw new IllegalArgumentException("Access denied for requested user");
         }
+    }
+
+    private boolean hasAnyRole(String... roles) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null) {
+            return false;
+        }
+        return authentication.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .anyMatch(authority -> {
+                    for (String role : roles) {
+                        if (role.equals(authority)) {
+                            return true;
+                        }
+                    }
+                    return false;
+                });
     }
 }

@@ -1,23 +1,19 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import type { AxiosError } from 'axios';
 import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useAppSelector } from '../app/hooks';
-import { useReturnBookWithFeedbackMutation } from '../features/catalog/hooks';
+import { useRateBookWithFeedbackMutation } from '../features/catalog/hooks';
 import { useLoansQuery, useMeQuery, useUpdateMeMutation } from '../features/preferences/hooks';
 import { parseJwt } from '../lib/auth';
+import { applyServerFieldErrors, extractApiError } from '../lib/apiErrors';
 import { profileSchema, type ProfileFormValues } from '../lib/schemas';
+import type { Loan } from '../types/api';
 
 const avatarOptions = [
   { label: 'Mage', url: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f9d9.svg' },
   { label: 'Developer', url: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f9d1-200d-1f4bb.svg' },
   { label: 'Graduate', url: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f468-200d-1f393.svg' },
 ];
-
-function extractApiError(error: unknown, fallback: string): string {
-  const axiosError = error as AxiosError<{ message?: string; error?: string; details?: string }>;
-  return axiosError.response?.data?.message ?? axiosError.response?.data?.details ?? axiosError.response?.data?.error ?? fallback;
-}
 
 export function ProfilePage() {
   const accessToken = useAppSelector((state) => state.auth.accessToken);
@@ -32,11 +28,10 @@ export function ProfilePage() {
   const meQuery = useMeQuery(Boolean(currentUserId));
   const updateMeMutation = useUpdateMeMutation();
   const loansQuery = useLoansQuery(isAdmin ? selectedUserId : null);
-  const returnMutation = useReturnBookWithFeedbackMutation();
+  const ratingMutation = useRateBookWithFeedbackMutation();
 
   const [ratingLoanId, setRatingLoanId] = useState<number | null>(null);
   const [ratingScore, setRatingScore] = useState(5);
-  const [ratingReview, setRatingReview] = useState('');
 
   const defaultAvatar = avatarOptions[0].url;
   const [selectedAvatar, setSelectedAvatar] = useState(defaultAvatar);
@@ -45,6 +40,8 @@ export function ProfilePage() {
     register,
     handleSubmit,
     reset,
+    setError,
+    clearErrors,
     formState: { errors },
   } = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
@@ -85,6 +82,7 @@ export function ProfilePage() {
   }, [defaultAvatar, meQuery.data, reset]);
 
   const onSubmit = (values: ProfileFormValues) => {
+    clearErrors();
     updateMeMutation.mutate(
       {
         ...values,
@@ -92,25 +90,27 @@ export function ProfilePage() {
       },
       {
         onSuccess: () => setIsEditMode(false),
+        onError: (error) => {
+          applyServerFieldErrors(error, setError);
+        },
       },
     );
   };
 
-  const submitReturnWithFeedback = (loanId: number, bookId: number) => {
+
+  const submitRatingWithFeedback = (bookId: number) => {
     if (!currentUserId) return;
-    returnMutation.mutate(
+    ratingMutation.mutate(
       {
-        loanId,
         bookId,
         userId: currentUserId,
         score: ratingScore,
-        reviewText: ratingReview,
+        hasExistingRating: loan.myRating != null,
       },
       {
         onSuccess: () => {
           setRatingLoanId(null);
           setRatingScore(5);
-          setRatingReview('');
         },
       },
     );
@@ -120,6 +120,7 @@ export function ProfilePage() {
     () => avatarOptions.find((option) => option.url === selectedAvatar)?.label ?? 'Custom avatar',
     [selectedAvatar],
   );
+  const canManageOwnRatings = !isAdmin || selectedUserId === currentUserId;
 
   return (
     <section className="rounded-xl bg-white p-5 shadow-sm">
@@ -181,11 +182,13 @@ export function ProfilePage() {
         <label className="grid gap-1 text-sm font-medium">
           Имя
           <input className="rounded-md border border-slate-300 px-3 py-2 disabled:bg-slate-100" disabled={!isEditMode} {...register('firstName')} />
+          {errors.firstName && <span className="text-sm text-red-700">{errors.firstName.message}</span>}
         </label>
 
         <label className="grid gap-1 text-sm font-medium">
           Фамилия
           <input className="rounded-md border border-slate-300 px-3 py-2 disabled:bg-slate-100" disabled={!isEditMode} {...register('lastName')} />
+          {errors.lastName && <span className="text-sm text-red-700">{errors.lastName.message}</span>}
         </label>
 
         <label className="grid gap-1 text-sm font-medium">
@@ -196,31 +199,36 @@ export function ProfilePage() {
         <label className="grid gap-1 text-sm font-medium">
           Страна проживания
           <input className="rounded-md border border-slate-300 px-3 py-2 disabled:bg-slate-100" disabled={!isEditMode} {...register('country')} />
+          {errors.country && <span className="text-sm text-red-700">{errors.country.message}</span>}
         </label>
 
         <label className="grid gap-1 text-sm font-medium">
           Город
           <input className="rounded-md border border-slate-300 px-3 py-2 disabled:bg-slate-100" disabled={!isEditMode} {...register('city')} />
+          {errors.city && <span className="text-sm text-red-700">{errors.city.message}</span>}
         </label>
 
         <label className="grid gap-1 text-sm font-medium">
           Почтовый индекс
-          <input className="rounded-md border border-slate-300 px-3 py-2 disabled:bg-slate-100" disabled={!isEditMode} {...register('postalCode')} />
+          <input className="rounded-md border border-slate-300 px-3 py-2 disabled:bg-slate-100" disabled={!isEditMode} inputMode="text" pattern="[A-Za-z0-9\- ]{3,12}" placeholder="Например: 12345 или SW1A 1AA" {...register('postalCode')} />
+          {errors.postalCode && <span className="text-sm text-red-700">{errors.postalCode.message}</span>}
         </label>
 
         <label className="grid gap-1 text-sm font-medium">
           Улица
           <input className="rounded-md border border-slate-300 px-3 py-2 disabled:bg-slate-100" disabled={!isEditMode} {...register('street')} />
+          {errors.street && <span className="text-sm text-red-700">{errors.street.message}</span>}
         </label>
 
         <label className="grid gap-1 text-sm font-medium">
           Номер дома
           <input className="rounded-md border border-slate-300 px-3 py-2 disabled:bg-slate-100" disabled={!isEditMode} {...register('houseNumber')} />
+          {errors.houseNumber && <span className="text-sm text-red-700">{errors.houseNumber.message}</span>}
         </label>
 
         <label className="grid gap-1 text-sm font-medium md:col-span-2">
           Контактный телефон
-          <input className="rounded-md border border-slate-300 px-3 py-2 disabled:bg-slate-100" disabled={!isEditMode} {...register('phoneNumber')} />
+          <input className="rounded-md border border-slate-300 px-3 py-2 disabled:bg-slate-100" disabled={!isEditMode} inputMode="tel" pattern="\+?[0-9()\-\s]{7,25}" placeholder="Например: +1 (555) 123-4567" {...register('phoneNumber')} />
           {errors.phoneNumber && <span className="text-sm text-red-700">{errors.phoneNumber.message}</span>}
         </label>
 
@@ -247,8 +255,8 @@ export function ProfilePage() {
 
       {loansQuery.isLoading && <p className="text-sm text-slate-600">Loading loans...</p>}
       {loansQuery.error && <p className="text-sm text-red-700">{extractApiError(loansQuery.error, 'Ошибка загрузки займов.')}</p>}
-      {returnMutation.error && <p className="text-sm text-red-700">{extractApiError(returnMutation.error, 'Не удалось вернуть книгу и сохранить отзыв.')}</p>}
-      {returnMutation.isSuccess && <p className="text-sm text-green-700">Книга возвращена, оценка сохранена.</p>}
+      {ratingMutation.error && <p className="text-sm text-red-700">{extractApiError(ratingMutation.error, 'Не удалось сохранить оценку и отзыв.')}</p>}
+      {ratingMutation.isSuccess && <p className="text-sm text-green-700">Оценка и отзыв сохранены.</p>}
 
       <div className="overflow-auto">
         <table className="min-w-full border-collapse text-sm">
@@ -256,6 +264,7 @@ export function ProfilePage() {
             <tr className="border-b border-slate-200 text-left">
               <th className="p-2">Loan ID</th>
               <th className="p-2">Book ID</th>
+              <th className="p-2">Title</th>
               <th className="p-2">Status</th>
               <th className="p-2">Borrowed</th>
               <th className="p-2">Due</th>
@@ -268,18 +277,19 @@ export function ProfilePage() {
               <tr className="border-b border-slate-100" key={loan.id}>
                 <td className="p-2">{loan.id}</td>
                 <td className="p-2">{loan.bookId}</td>
+                <td className="p-2">{loan.bookTitle}</td>
                 <td className="p-2">{loan.status}</td>
                 <td className="p-2">{loan.borrowedAt}</td>
                 <td className="p-2">{loan.dueDate}</td>
                 <td className="p-2">{loan.returnedAt || '—'}</td>
                 <td className="p-2">
-                  {loan.status === 'ACTIVE' && (
+                  {loan.status === 'RETURNED' && loan.userId === currentUserId && (
                     <button
                       className="rounded-md bg-slate-900 px-3 py-1 text-xs text-white"
-                      onClick={() => setRatingLoanId(loan.id)}
+                      onClick={() => submitReturn(loan.id)}
                       type="button"
                     >
-                      Return & rate
+                      Rate & review
                     </button>
                   )}
                 </td>
@@ -289,9 +299,60 @@ export function ProfilePage() {
         </table>
       </div>
 
-      {ratingLoanId && (
+      <div className="mt-6 rounded-xl border border-slate-200 p-4">
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <div>
+            <h3 className="text-lg font-semibold">My ratings & book history</h3>
+            <p className="text-sm text-slate-600">Для возвращённых книг можно поставить новую оценку или изменить существующую.</p>
+          </div>
+        </div>
+
+        {!canManageOwnRatings ? (
+          <p className="text-sm text-slate-600">Редактирование оценок доступно только для собственного профиля.</p>
+        ) : ratingLoans.length === 0 ? (
+          <p className="text-sm text-slate-600">Пока нет возвращённых книг для оценки.</p>
+        ) : (
+          <div className="overflow-auto">
+            <table className="min-w-full border-collapse text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 text-left">
+                  <th className="p-2">Loan ID</th>
+                  <th className="p-2">Book</th>
+                  <th className="p-2">Returned</th>
+                  <th className="p-2">My rating</th>
+                  <th className="p-2">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ratingLoans.map((loan) => (
+                  <tr className="border-b border-slate-100" key={`rating-${loan.id}`}>
+                    <td className="p-2">{loan.id}</td>
+                    <td className="p-2">
+                      <div className="font-medium text-slate-800">{loan.bookTitle}</div>
+                      <div className="text-xs text-slate-500">Book #{loan.bookId}</div>
+                    </td>
+                    <td className="p-2">{loan.returnedAt || '—'}</td>
+                    <td className="p-2">{loan.myRating != null ? `${loan.myRating} / 5` : 'Not rated yet'}</td>
+                    <td className="p-2">
+                      <button
+                        className="rounded-md border border-slate-300 px-3 py-1 text-xs hover:bg-slate-50"
+                        onClick={() => setRatingLoanId(loan.id)}
+                        type="button"
+                      >
+                        {loan.myRating == null ? 'Rate' : 'Edit'}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {ratingLoan && (
         <div className="mt-4 rounded-xl border border-indigo-200 bg-indigo-50 p-4">
-          <h3 className="mb-2 text-sm font-semibold">Оцените книгу при возврате</h3>
+          <h3 className="mb-2 text-sm font-semibold">Оцените книгу и оставьте комментарий</h3>
           <label className="mb-2 block text-sm">
             Оценка
             <select className="ml-2 rounded-md border border-slate-300 px-2 py-1" value={ratingScore} onChange={(e) => setRatingScore(Number(e.target.value))}>
@@ -302,10 +363,6 @@ export function ProfilePage() {
               <option value={1}>★☆☆☆☆ (1)</option>
             </select>
           </label>
-          <label className="mb-3 block text-sm">
-            Отзыв (необязательно)
-            <textarea className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2" rows={3} value={ratingReview} onChange={(e) => setRatingReview(e.target.value)} />
-          </label>
           <div className="flex gap-2">
             <button
               className="rounded-md bg-indigo-600 px-3 py-2 text-xs text-white"
@@ -313,10 +370,10 @@ export function ProfilePage() {
               onClick={() => {
                 const loan = loansQuery.data?.find((item) => item.id === ratingLoanId);
                 if (!loan) return;
-                submitReturnWithFeedback(loan.id, loan.bookId);
+                submitRatingWithFeedback(loan.bookId);
               }}
             >
-              Confirm return
+              Save feedback
             </button>
             <button className="rounded-md border border-slate-300 px-3 py-2 text-xs" type="button" onClick={() => setRatingLoanId(null)}>
               Cancel
@@ -324,6 +381,7 @@ export function ProfilePage() {
           </div>
         </div>
       )}
+
     </section>
   );
 }

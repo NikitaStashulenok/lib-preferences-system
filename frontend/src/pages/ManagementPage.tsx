@@ -42,12 +42,12 @@ export function ManagementPage() {
     { page: loanPage, size: loanSize, userQuery: loanUserQuery || undefined, bookQuery: loanBookQuery || undefined, status: loanStatus || undefined },
     isAdmin,
   );
-  const librarianLoansQuery = useLibrarianLoansQuery(
+  const librarianReservationsQuery = useLibrarianReservationsQuery(
     { page: loanPage, size: loanSize, userQuery: loanUserQuery || undefined, bookQuery: loanBookQuery || undefined, status: loanStatus || undefined },
     isLibrarian && !isAdmin,
   );
 
-  const loansQuery = useMemo(() => (isAdmin ? adminLoansQuery : librarianLoansQuery), [adminLoansQuery, librarianLoansQuery, isAdmin]);
+  const loansQuery = useMemo(() => (isAdmin ? adminLoansQuery : librarianReservationsQuery), [adminLoansQuery, librarianReservationsQuery, isAdmin]);
 
   const updateUserMutation = useUpdateAdminUserMutation();
   const deleteUserMutation = useDeleteAdminUserMutation();
@@ -92,7 +92,7 @@ export function ManagementPage() {
             <button className={`rounded-md px-3 py-2 text-sm ${tab === 'books' ? 'bg-indigo-600 text-white' : 'bg-slate-100'}`} onClick={() => setTab('books')} type="button">Books</button>
           </>
         )}
-        <button className={`rounded-md px-3 py-2 text-sm ${tab === 'loans' ? 'bg-indigo-600 text-white' : 'bg-slate-100'}`} onClick={() => setTab('loans')} type="button">Loans</button>
+        <button className={`rounded-md px-3 py-2 text-sm ${tab === 'loans' ? 'bg-indigo-600 text-white' : 'bg-slate-100'}`} onClick={() => setTab('loans')} type="button">{isAdmin ? 'Loans' : 'Orders'}</button>
       </div>
 
       {isAdmin && (
@@ -110,7 +110,7 @@ export function ManagementPage() {
       )}
 
       {tab === 'users' && isAdmin && (
-        <div>
+        <div>{/* unchanged */}
           <div className="mb-3 flex gap-2">
             <input className="rounded-md border border-slate-300 px-3 py-2 text-sm" placeholder="Search email/nickname" value={userQuery} onChange={(e) => { setUserQuery(e.target.value); setUserPage(0); }} />
             <select className="rounded-md border border-slate-300 px-3 py-2 text-sm" value={userRole} onChange={(e) => { setUserRole(e.target.value); setUserPage(0); }}>
@@ -120,7 +120,6 @@ export function ManagementPage() {
               <option value="ROLE_ADMIN">ROLE_ADMIN</option>
             </select>
           </div>
-
           <div className="overflow-auto">
             <table className="min-w-full border-collapse text-sm">
               <thead><tr className="border-b border-slate-200"><th className="p-2 text-left">ID</th><th className="p-2 text-left">Email</th><th className="p-2 text-left">Nickname</th><th className="p-2 text-left">Role</th><th className="p-2 text-left">Actions</th></tr></thead>
@@ -145,7 +144,6 @@ export function ManagementPage() {
               </tbody>
             </table>
           </div>
-
           <Pagination page={usersQuery.data?.number ?? userPage} totalPages={usersQuery.data?.totalPages ?? 0} onPageChange={setUserPage} />
         </div>
       )}
@@ -155,7 +153,6 @@ export function ManagementPage() {
           <div className="mb-3 flex gap-2">
             <input className="rounded-md border border-slate-300 px-3 py-2 text-sm" placeholder="Search books" value={bookQuery} onChange={(e) => { setBookQuery(e.target.value); setBookPage(0); }} />
           </div>
-
           <div className="overflow-auto">
             <table className="min-w-full border-collapse text-sm">
               <thead><tr className="border-b border-slate-200"><th className="p-2 text-left">ID</th><th className="p-2 text-left">Title</th><th className="p-2 text-left">Author</th><th className="p-2 text-left">Available</th><th className="p-2 text-left">Actions</th></tr></thead>
@@ -174,7 +171,6 @@ export function ManagementPage() {
               </tbody>
             </table>
           </div>
-
           <Pagination page={booksQuery.data?.number ?? bookPage} totalPages={booksQuery.data?.totalPages ?? 0} onPageChange={setBookPage} />
         </div>
       )}
@@ -186,53 +182,77 @@ export function ManagementPage() {
             <input className="rounded-md border border-slate-300 px-3 py-2 text-sm" placeholder="Book title" value={loanBookQuery} onChange={(e) => { setLoanBookQuery(e.target.value); setLoanPage(0); }} />
             <select className="rounded-md border border-slate-300 px-3 py-2 text-sm" value={loanStatus} onChange={(e) => { setLoanStatus(e.target.value); setLoanPage(0); }}>
               <option value="">All statuses</option>
-              <option value="ACTIVE">ACTIVE</option>
-              <option value="RETURNED">RETURNED</option>
-              {!isAdmin && <option value="NOTIFIED">NOTIFIED</option>}
+              {isAdmin ? (
+                <>
+                  <option value="ISSUED">ISSUED</option>
+                  <option value="RETURNED">RETURNED</option>
+                  <option value="OVERDUE">OVERDUE</option>
+                </>
+              ) : (
+                <>
+                  <option value="WAITING">WAITING</option>
+                  <option value="NOTIFIED">NOTIFIED</option>
+                  <option value="FULFILLED">FULFILLED</option>
+                  <option value="CANCELLED">CANCELLED</option>
+                </>
+              )}
             </select>
+            <button
+              className="rounded-md border border-slate-300 px-3 py-2 text-sm hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+              onClick={() => void loansQuery.refetch()}
+              type="button"
+              disabled={loansQuery.isFetching}
+            >
+              {loansQuery.isFetching ? 'Обновление…' : 'Обновить'}
+            </button>
           </div>
 
           <div className="overflow-auto">
             <table className="min-w-full border-collapse text-sm">
-              <thead><tr className="border-b border-slate-200"><th className="p-2 text-left">ID</th><th className="p-2 text-left">Type</th><th className="p-2 text-left">User</th><th className="p-2 text-left">Book</th><th className="p-2 text-left">Status</th><th className="p-2 text-left">Borrowed</th><th className="p-2 text-left">Returned</th><th className="p-2 text-left">Actions</th></tr></thead>
+              <thead>
+                <tr className="border-b border-slate-200">
+                  <th className="p-2 text-left">ID</th>
+                  <th className="p-2 text-left">User</th>
+                  <th className="p-2 text-left">Book</th>
+                  <th className="p-2 text-left">Status</th>
+                  <th className="p-2 text-left">Created</th>
+                  <th className="p-2 text-left">Issued</th>
+                  <th className="p-2 text-left">Returned</th>
+                  {!isAdmin && <th className="p-2 text-left">Actions</th>}
+                </tr>
+              </thead>
               <tbody>
-                {loansQuery.data?.content.map((loan) => {
-                  const canIssue = !isAdmin && 'kind' in loan && loan.kind === 'RESERVATION' && loan.status === 'NOTIFIED';
-                  const canReturn = !isAdmin && loan.status === 'ACTIVE';
-                  const actionPending = (canIssue && issueReservationMutation.isPending) || (canReturn && returnLibrarianLoanMutation.isPending);
+                {loansQuery.data?.content.map((entry) => {
+                  if (isAdmin) {
+                    return (
+                      <tr className="border-b border-slate-100" key={entry.id}>
+                        <td className="p-2">{entry.id}</td>
+                        <td className="p-2">{entry.userEmail}</td>
+                        <td className="p-2">{entry.bookTitle}</td>
+                        <td className="p-2">{entry.status}</td>
+                        <td className="p-2">{entry.borrowedAt}</td>
+                        <td className="p-2">{entry.borrowedAt}</td>
+                        <td className="p-2">{entry.returnedAt || '—'}</td>
+                      </tr>
+                    );
+                  }
 
+                  const reservation = entry as import('../types/api').LibrarianReservation;
+                  const canIssue = ['WAITING', 'NOTIFIED'].includes(reservation.status) && !reservation.loanId;
+                  const canReturn = ['ISSUED', 'OVERDUE'].includes(reservation.loanStatus ?? '');
                   return (
-                    <tr className="border-b border-slate-100" key={`${('kind' in loan ? loan.kind : 'LOAN')}-${loan.id}`}>
-                      <td className="p-2">{loan.id}</td>
-                      <td className="p-2">{'kind' in loan ? loan.kind : 'LOAN'}</td>
-                      <td className="p-2">{loan.userEmail}</td>
-                      <td className="p-2">{loan.bookTitle}</td>
-                      <td className="p-2">{loan.status}</td>
-                      <td className="p-2">{loan.borrowedAt || ('createdAt' in loan ? loan.createdAt : null) || '—'}</td>
-                      <td className="p-2">{loan.returnedAt || '—'}</td>
+                    <tr className="border-b border-slate-100" key={reservation.id}>
+                      <td className="p-2">{reservation.id}</td>
+                      <td className="p-2">{reservation.userEmail}</td>
+                      <td className="p-2">{reservation.bookTitle}</td>
+                      <td className="p-2">{`${reservation.status}${reservation.loanStatus ? ` / ${reservation.loanStatus}` : ''}`}</td>
+                      <td className="p-2">{reservation.createdAt}</td>
+                      <td className="p-2">{reservation.borrowedAt || '—'}</td>
+                      <td className="p-2">{reservation.returnedAt || '—'}</td>
                       <td className="p-2">
-                        <div className="flex gap-1">
-                          {canIssue && (
-                            <button
-                              className="rounded-md bg-indigo-600 px-2 py-1 text-xs text-white disabled:opacity-50"
-                              disabled={actionPending}
-                              onClick={() => issueReservationMutation.mutate(loan.id)}
-                              type="button"
-                            >
-                              Выдать
-                            </button>
-                          )}
-                          {canReturn && (
-                            <button
-                              className="rounded-md bg-emerald-600 px-2 py-1 text-xs text-white disabled:opacity-50"
-                              disabled={actionPending}
-                              onClick={() => returnLibrarianLoanMutation.mutate(loan.id)}
-                              type="button"
-                            >
-                              Возвратить
-                            </button>
-                          )}
-                          {!canIssue && !canReturn && <span className="text-xs text-slate-400">—</span>}
+                        <div className="flex flex-wrap gap-2">
+                          <button className="rounded-md bg-indigo-600 px-2 py-1 text-xs text-white disabled:opacity-50" disabled={!canIssue || issueReservationMutation.isPending} onClick={() => issueReservationMutation.mutate(reservation.id)} type="button">Отметить как выдано</button>
+                          <button className="rounded-md bg-emerald-600 px-2 py-1 text-xs text-white disabled:opacity-50" disabled={!canReturn || returnReservationMutation.isPending} onClick={() => returnReservationMutation.mutate(reservation.id)} type="button">Отметить как возвращено</button>
                         </div>
                       </td>
                     </tr>

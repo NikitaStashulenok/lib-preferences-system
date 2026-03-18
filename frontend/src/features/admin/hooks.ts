@@ -14,7 +14,12 @@ export function useUpdateAdminUserMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, payload }: { id: number; payload: { email?: string; nickname?: string; roles?: string[] } }) => updateAdminUser(id, payload),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['admin-users'] }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      void queryClient.invalidateQueries({ queryKey: ['admin-loans'] });
+      void queryClient.invalidateQueries({ queryKey: ['librarian-loans'] });
+      void queryClient.invalidateQueries({ queryKey: ['loans'] });
+    },
   });
 }
 
@@ -25,6 +30,8 @@ export function useDeleteAdminUserMutation() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['admin-users'] });
       void queryClient.invalidateQueries({ queryKey: ['admin-loans'] });
+      void queryClient.invalidateQueries({ queryKey: ['librarian-loans'] });
+      void queryClient.invalidateQueries({ queryKey: ['loans'] });
     },
   });
 }
@@ -44,6 +51,7 @@ export function useDeleteAdminBookMutation() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['admin-books'] });
       void queryClient.invalidateQueries({ queryKey: ['admin-loans'] });
+      void queryClient.invalidateQueries({ queryKey: ['librarian-loans'] });
       void queryClient.invalidateQueries({ queryKey: ['books'] });
     },
   });
@@ -57,10 +65,10 @@ export function useAdminLoansQuery(params: { page: number; size: number; userQue
   });
 }
 
-export function useLibrarianLoansQuery(params: { page: number; size: number; userQuery?: string; bookQuery?: string; status?: string }, enabled: boolean) {
+export function useLibrarianReservationsQuery(params: { page: number; size: number; userQuery?: string; bookQuery?: string; status?: string }, enabled: boolean) {
   return useQuery({
-    queryKey: ['librarian-loans', params],
-    queryFn: () => fetchLibrarianLoans(params),
+    queryKey: ['librarian-reservations', params],
+    queryFn: () => fetchLibrarianReservations(params),
     enabled,
   });
 }

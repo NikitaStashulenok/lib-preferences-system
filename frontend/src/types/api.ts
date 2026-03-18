@@ -30,12 +30,11 @@ export type RecommendationItem = {
   sourceTags: Array<'SYSTEM' | 'USER'>;
 };
 
-
-
 export type BookDetails = {
   book: Book;
   averageRating: number;
   ratingsCount: number;
+  myRating?: number | null;
 };
 
 export type Review = {
@@ -55,13 +54,24 @@ export type Loan = {
   id: number;
   userId: number;
   bookId: number;
+  bookTitle: string;
   status: string;
   borrowedAt: string;
   dueDate: string;
   returnedAt?: string | null;
+  myRating?: number | null;
 };
 
-
+export type Reservation = {
+  id: number;
+  userId: number;
+  bookId: number;
+  status: string;
+  createdAt: string;
+  notifiedAt?: string | null;
+  expiresAt?: string | null;
+  cancelledAt?: string | null;
+};
 
 export type AdminUser = {
   id: number;
@@ -82,21 +92,22 @@ export type AdminLoan = {
   returnedAt?: string | null;
 };
 
-export type LibrarianCirculationItem = {
+export type LibrarianReservation = {
   id: number;
-  kind: 'LOAN' | 'RESERVATION';
   userId: number;
   userEmail: string;
   bookId: number;
   bookTitle: string;
   status: string;
-  borrowedAt?: string | null;
-  dueDate?: string | null;
-  returnedAt?: string | null;
-  createdAt?: string | null;
+  createdAt: string;
   notifiedAt?: string | null;
   expiresAt?: string | null;
   cancelledAt?: string | null;
+  loanId?: number | null;
+  loanStatus?: string | null;
+  borrowedAt?: string | null;
+  dueDate?: string | null;
+  returnedAt?: string | null;
 };
 
 export type PreferencesPayload = {
