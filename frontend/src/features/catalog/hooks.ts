@@ -24,6 +24,8 @@ export function useBorrowBookMutation(params: BookSearchParams) {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['books', params] });
       void queryClient.invalidateQueries({ queryKey: ['loans'] });
+      void queryClient.invalidateQueries({ queryKey: ['admin-loans'] });
+      void queryClient.invalidateQueries({ queryKey: ['librarian-loans'] });
     },
   });
 }
@@ -55,6 +57,8 @@ export function useReturnBookWithFeedbackMutation() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['books'] });
       void queryClient.invalidateQueries({ queryKey: ['loans'] });
+      void queryClient.invalidateQueries({ queryKey: ['admin-loans'] });
+      void queryClient.invalidateQueries({ queryKey: ['librarian-loans'] });
       void queryClient.invalidateQueries({ queryKey: ['recommendations'] });
     },
   });
