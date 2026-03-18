@@ -16,6 +16,7 @@ import {
 } from '../lib/schemas';
 import { useBooksQuery, useCatalogMetaQuery, useCreateBookMutation, useOrderBookMutation } from '../features/catalog/hooks';
 import { parseJwt } from '../lib/auth';
+import { applyServerFieldErrors, extractApiError } from '../lib/apiErrors';
 import { useRecommendationsQuery } from '../features/preferences/hooks';
 
 function parseYear(value: string): number | undefined {
@@ -138,6 +139,7 @@ export function CatalogPage() {
   };
 
   const submitCreateBook = (values: CreateBookFormValues) => {
+    createBookForm.clearErrors();
     createBookMutation.mutate({
       title: values.title,
       author: values.author,
@@ -151,6 +153,10 @@ export function CatalogPage() {
       description: values.description,
       file: bookFile,
       cover: coverFile,
+    }, {
+      onError: (error) => {
+        applyServerFieldErrors(error, createBookForm.setError);
+      },
     });
   };
 
@@ -241,12 +247,14 @@ export function CatalogPage() {
 
           <label className="grid gap-1 text-sm font-medium">
             Год издания: от
-            <input className="rounded-md border border-slate-300 px-3 py-2" {...advancedForm.register('yearFrom')} placeholder="Например: 1950" />
+            <input className="rounded-md border border-slate-300 px-3 py-2" type="number" inputMode="numeric" min={1450} max={new Date().getFullYear()} placeholder="Например: 1950" {...advancedForm.register('yearFrom')} />
+            {advancedForm.formState.errors.yearFrom && <span className="text-sm text-red-700">{advancedForm.formState.errors.yearFrom.message}</span>}
           </label>
 
           <label className="grid gap-1 text-sm font-medium">
             Год издания: до
-            <input className="rounded-md border border-slate-300 px-3 py-2" {...advancedForm.register('yearTo')} placeholder="Например: 2024" />
+            <input className="rounded-md border border-slate-300 px-3 py-2" type="number" inputMode="numeric" min={1450} max={new Date().getFullYear()} placeholder="Например: 2024" {...advancedForm.register('yearTo')} />
+            {advancedForm.formState.errors.yearTo && <span className="text-sm text-red-700">{advancedForm.formState.errors.yearTo.message}</span>}
           </label>
 
           <label className="grid gap-1 text-sm font-medium">
@@ -273,42 +281,52 @@ export function CatalogPage() {
           <label className="grid gap-1 text-sm font-medium">
             Название
             <input className="rounded-md border border-slate-300 px-3 py-2" {...createBookForm.register('title')} />
+            {createBookForm.formState.errors.title && <span className="text-sm text-red-700">{createBookForm.formState.errors.title.message}</span>}
           </label>
           <label className="grid gap-1 text-sm font-medium">
             Автор
             <input className="rounded-md border border-slate-300 px-3 py-2" {...createBookForm.register('author')} />
+            {createBookForm.formState.errors.author && <span className="text-sm text-red-700">{createBookForm.formState.errors.author.message}</span>}
           </label>
           <label className="grid gap-1 text-sm font-medium">
             Год издания
-            <input className="rounded-md border border-slate-300 px-3 py-2" type="number" {...createBookForm.register('publicationYear')} />
+            <input className="rounded-md border border-slate-300 px-3 py-2" type="number" inputMode="numeric" min={1450} max={new Date().getFullYear()} placeholder={`1450-${new Date().getFullYear()}`} {...createBookForm.register('publicationYear')} />
+            {createBookForm.formState.errors.publicationYear && <span className="text-sm text-red-700">{createBookForm.formState.errors.publicationYear.message}</span>}
           </label>
           <label className="grid gap-1 text-sm font-medium">
             Кол-во копий
-            <input className="rounded-md border border-slate-300 px-3 py-2" type="number" {...createBookForm.register('copies')} />
+            <input className="rounded-md border border-slate-300 px-3 py-2" type="number" inputMode="numeric" min={1} max={1000} placeholder="Например: 3" {...createBookForm.register('copies')} />
+            {createBookForm.formState.errors.copies && <span className="text-sm text-red-700">{createBookForm.formState.errors.copies.message}</span>}
           </label>
           <label className="grid gap-1 text-sm font-medium md:col-span-2">
             Жанры (через запятую)
-            <input className="rounded-md border border-slate-300 px-3 py-2" {...createBookForm.register('genresCsv')} />
+            <input className="rounded-md border border-slate-300 px-3 py-2" placeholder="Например: Фантастика, Детектив" {...createBookForm.register('genresCsv')} />
+            {createBookForm.formState.errors.genresCsv && <span className="text-sm text-red-700">{createBookForm.formState.errors.genresCsv.message}</span>}
           </label>
           <label className="grid gap-1 text-sm font-medium">
             ISBN
-            <input className="rounded-md border border-slate-300 px-3 py-2" {...createBookForm.register('isbn')} />
+            <input className="rounded-md border border-slate-300 px-3 py-2" inputMode="numeric" pattern="(?:97[89])?[0-9]{9}[0-9Xx]" placeholder="Например: 9783161484100" {...createBookForm.register('isbn')} />
+            {createBookForm.formState.errors.isbn && <span className="text-sm text-red-700">{createBookForm.formState.errors.isbn.message}</span>}
           </label>
           <label className="grid gap-1 text-sm font-medium">
             Издательство
             <input className="rounded-md border border-slate-300 px-3 py-2" {...createBookForm.register('publisher')} />
+            {createBookForm.formState.errors.publisher && <span className="text-sm text-red-700">{createBookForm.formState.errors.publisher.message}</span>}
           </label>
           <label className="grid gap-1 text-sm font-medium">
             Язык
             <input className="rounded-md border border-slate-300 px-3 py-2" {...createBookForm.register('language')} />
+            {createBookForm.formState.errors.language && <span className="text-sm text-red-700">{createBookForm.formState.errors.language.message}</span>}
           </label>
           <label className="grid gap-1 text-sm font-medium">
             Страниц
-            <input className="rounded-md border border-slate-300 px-3 py-2" type="number" {...createBookForm.register('pageCount')} />
+            <input className="rounded-md border border-slate-300 px-3 py-2" type="number" inputMode="numeric" min={1} max={10000} placeholder="Например: 320" {...createBookForm.register('pageCount')} />
+            {createBookForm.formState.errors.pageCount && <span className="text-sm text-red-700">{createBookForm.formState.errors.pageCount.message}</span>}
           </label>
           <label className="grid gap-1 text-sm font-medium md:col-span-2">
             Описание
             <textarea className="rounded-md border border-slate-300 px-3 py-2" rows={3} {...createBookForm.register('description')} />
+            {createBookForm.formState.errors.description && <span className="text-sm text-red-700">{createBookForm.formState.errors.description.message}</span>}
           </label>
 
           <label className="grid gap-1 text-sm font-medium">
@@ -325,7 +343,7 @@ export function CatalogPage() {
               Добавить книгу
             </button>
             {createBookMutation.isSuccess && <p className="mt-2 text-sm text-green-700">Книга добавлена.</p>}
-            {createBookMutation.error && <p className="mt-2 text-sm text-red-700">Не удалось добавить книгу.</p>}
+            {createBookMutation.error && <p className="mt-2 text-sm text-red-700">{extractApiError(createBookMutation.error, 'Не удалось добавить книгу.')}</p>}
           </div>
         </form>
       )}
