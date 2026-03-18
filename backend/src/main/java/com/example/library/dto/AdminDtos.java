@@ -4,7 +4,6 @@ import com.example.library.model.LoanStatus;
 import com.example.library.model.ReservationStatus;
 import com.example.library.model.Role;
 import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -19,7 +18,7 @@ public class AdminDtos {
     ) {}
 
     public record AdminUserUpdateRequest(
-            @Email @NotBlank String email,
+            @Email String email,
             @Size(min = 2, max = 50) String nickname,
             Set<Role> roles
     ) {}
@@ -100,7 +99,7 @@ public class AdminDtos {
     ) {}
 
     public record InviteLibrarianRequest(
-            @Email @NotBlank String email,
+            @Email @jakarta.validation.constraints.NotBlank String email,
             @Size(min = 2, max = 50) String nickname
     ) {}
 

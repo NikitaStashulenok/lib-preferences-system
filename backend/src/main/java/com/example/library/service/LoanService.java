@@ -44,6 +44,14 @@ public class LoanService {
     }
 
     @Transactional
+    public Loan issueForReservation(Long userId, Long bookId) {
+        if (!currentUserService.isLibrarianOrAdmin()) {
+            throw new IllegalArgumentException("Only librarians can issue reserved books");
+        }
+        return createIssuedLoan(userId, bookId);
+    }
+
+    @Transactional
     public LoanDtos.LoanResponse issueLoan(Long id) {
         Loan loan = loanRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Loan not found"));
         if (loan.getStatus() != LoanStatus.REQUESTED) {

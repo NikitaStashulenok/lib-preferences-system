@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { fetchLoans, fetchMe, fetchRecommendations, fetchReservations, updateMe, updatePreferences } from '../../api/libraryApi';
+import { cancelReservation, fetchLoans, fetchMe, fetchRecommendations, fetchReservations, updateMe, updatePreferences } from '../../api/libraryApi';
 import type { PreferencesPayload, RecommendationSource } from '../../types/api';
 
 export function useRecommendationsQuery(userId: number | null, page = 0, size = 20, source: RecommendationSource = 'all') {
@@ -21,12 +21,25 @@ export function useUpdatePreferencesMutation(userId: number | null) {
   });
 }
 
-
 export function useReservationsQuery(userId?: number | null) {
   return useQuery({
     queryKey: ['reservations', userId ?? 'me'],
     queryFn: () => fetchReservations(userId),
     enabled: userId === undefined || userId === null || Boolean(userId),
+  });
+}
+
+export function useCancelReservationMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ reservationId, userId }: { reservationId: number; userId: number }) => cancelReservation(reservationId, userId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['reservations'] });
+      void queryClient.invalidateQueries({ queryKey: ['books'] });
+      void queryClient.invalidateQueries({ queryKey: ['librarian-reservations'] });
+      void queryClient.invalidateQueries({ queryKey: ['admin-loans'] });
+    },
   });
 }
 

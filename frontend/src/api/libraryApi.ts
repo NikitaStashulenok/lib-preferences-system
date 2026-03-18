@@ -47,18 +47,21 @@ export async function deleteBook(id: number): Promise<void> {
   await apiClient.delete(`/books/${id}`);
 }
 
-export async function updateBook(id: number, payload: {
-  title?: string;
-  author?: string;
-  publicationYear?: number;
-  genres?: string[];
-  copies?: number;
-  isbn?: string | null;
-  publisher?: string | null;
-  language?: string | null;
-  pageCount?: number | null;
-  description?: string | null;
-}): Promise<Book> {
+export async function updateBook(
+  id: number,
+  payload: {
+    title?: string;
+    author?: string;
+    publicationYear?: number;
+    genres?: string[];
+    copies?: number;
+    isbn?: string | null;
+    publisher?: string | null;
+    language?: string | null;
+    pageCount?: number | null;
+    description?: string | null;
+  },
+): Promise<Book> {
   const { data } = await apiClient.patch<Book>(`/books/${id}`, payload);
   return data;
 }
