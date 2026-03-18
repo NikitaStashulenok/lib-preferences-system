@@ -208,6 +208,14 @@ export function ManagementPage() {
                 </>
               )}
             </select>
+            <button
+              className="rounded-md border border-slate-300 px-3 py-2 text-sm hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+              onClick={() => void loansQuery.refetch()}
+              type="button"
+              disabled={loansQuery.isFetching}
+            >
+              {loansQuery.isFetching ? 'Обновление…' : 'Обновить'}
+            </button>
           </div>
 
           <div className="overflow-auto">

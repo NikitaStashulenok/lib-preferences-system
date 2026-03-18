@@ -23,9 +23,9 @@ export function useOrderBookMutation(params: BookSearchParams) {
     mutationFn: ({ userId, bookId }: { userId: number; bookId: number }) => createReservation(userId, bookId),
     onSuccess: (_, variables) => {
       void queryClient.invalidateQueries({ queryKey: ['books', params] });
-      void queryClient.invalidateQueries({ queryKey: ['reservations', variables.userId] });
-      void queryClient.invalidateQueries({ queryKey: ['reservations', 'me'] });
-      void queryClient.invalidateQueries({ queryKey: ['librarian-reservations'] });
+      void queryClient.invalidateQueries({ queryKey: ['loans'] });
+      void queryClient.invalidateQueries({ queryKey: ['admin-loans'] });
+      void queryClient.invalidateQueries({ queryKey: ['librarian-loans'] });
     },
   });
 }
@@ -56,8 +56,10 @@ export function useRateBookWithFeedbackMutation() {
       }
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['book-reviews'] });
-      void queryClient.invalidateQueries({ queryKey: ['book-details'] });
+      void queryClient.invalidateQueries({ queryKey: ['books'] });
+      void queryClient.invalidateQueries({ queryKey: ['loans'] });
+      void queryClient.invalidateQueries({ queryKey: ['admin-loans'] });
+      void queryClient.invalidateQueries({ queryKey: ['librarian-loans'] });
       void queryClient.invalidateQueries({ queryKey: ['recommendations'] });
       void queryClient.invalidateQueries({ queryKey: ['librarian-reservations'] });
     },
