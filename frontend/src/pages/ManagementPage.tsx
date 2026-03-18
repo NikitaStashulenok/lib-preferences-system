@@ -2,7 +2,7 @@ import { FormEvent, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { Pagination } from '../components/Pagination';
-import { useDeleteAdminBookMutation, useDeleteAdminUserMutation, useAdminBooksQuery, useAdminLoansQuery, useAdminUsersQuery, useInviteLibrarianMutation, useLibrarianLoansQuery, useUpdateAdminUserMutation } from '../features/admin/hooks';
+import { useDeleteAdminBookMutation, useDeleteAdminUserMutation, useAdminBooksQuery, useAdminLoansQuery, useAdminUsersQuery, useInviteLibrarianMutation, useIssueLibrarianReservationMutation, useLibrarianLoansQuery, useReturnLibrarianLoanMutation, useUpdateAdminUserMutation } from '../features/admin/hooks';
 import { parseJwt } from '../lib/auth';
 import { useAppSelector } from '../app/hooks';
 
@@ -53,6 +53,8 @@ export function ManagementPage() {
   const deleteUserMutation = useDeleteAdminUserMutation();
   const deleteBookMutation = useDeleteAdminBookMutation();
   const inviteMutation = useInviteLibrarianMutation();
+  const issueReservationMutation = useIssueLibrarianReservationMutation();
+  const returnLibrarianLoanMutation = useReturnLibrarianLoanMutation();
 
   const applyUserRole = (id: number, role: string) => {
     updateUserMutation.mutate({ id, payload: { roles: [role] } });
@@ -186,23 +188,56 @@ export function ManagementPage() {
               <option value="">All statuses</option>
               <option value="ACTIVE">ACTIVE</option>
               <option value="RETURNED">RETURNED</option>
+              {!isAdmin && <option value="NOTIFIED">NOTIFIED</option>}
             </select>
           </div>
 
           <div className="overflow-auto">
             <table className="min-w-full border-collapse text-sm">
-              <thead><tr className="border-b border-slate-200"><th className="p-2 text-left">ID</th><th className="p-2 text-left">User</th><th className="p-2 text-left">Book</th><th className="p-2 text-left">Status</th><th className="p-2 text-left">Borrowed</th><th className="p-2 text-left">Returned</th></tr></thead>
+              <thead><tr className="border-b border-slate-200"><th className="p-2 text-left">ID</th><th className="p-2 text-left">Type</th><th className="p-2 text-left">User</th><th className="p-2 text-left">Book</th><th className="p-2 text-left">Status</th><th className="p-2 text-left">Borrowed</th><th className="p-2 text-left">Returned</th><th className="p-2 text-left">Actions</th></tr></thead>
               <tbody>
-                {loansQuery.data?.content.map((loan) => (
-                  <tr className="border-b border-slate-100" key={loan.id}>
-                    <td className="p-2">{loan.id}</td>
-                    <td className="p-2">{loan.userEmail}</td>
-                    <td className="p-2">{loan.bookTitle}</td>
-                    <td className="p-2">{loan.status}</td>
-                    <td className="p-2">{loan.borrowedAt}</td>
-                    <td className="p-2">{loan.returnedAt || '—'}</td>
-                  </tr>
-                ))}
+                {loansQuery.data?.content.map((loan) => {
+                  const canIssue = !isAdmin && 'kind' in loan && loan.kind === 'RESERVATION' && loan.status === 'NOTIFIED';
+                  const canReturn = !isAdmin && loan.status === 'ACTIVE';
+                  const actionPending = (canIssue && issueReservationMutation.isPending) || (canReturn && returnLibrarianLoanMutation.isPending);
+
+                  return (
+                    <tr className="border-b border-slate-100" key={`${('kind' in loan ? loan.kind : 'LOAN')}-${loan.id}`}>
+                      <td className="p-2">{loan.id}</td>
+                      <td className="p-2">{'kind' in loan ? loan.kind : 'LOAN'}</td>
+                      <td className="p-2">{loan.userEmail}</td>
+                      <td className="p-2">{loan.bookTitle}</td>
+                      <td className="p-2">{loan.status}</td>
+                      <td className="p-2">{loan.borrowedAt || ('createdAt' in loan ? loan.createdAt : null) || '—'}</td>
+                      <td className="p-2">{loan.returnedAt || '—'}</td>
+                      <td className="p-2">
+                        <div className="flex gap-1">
+                          {canIssue && (
+                            <button
+                              className="rounded-md bg-indigo-600 px-2 py-1 text-xs text-white disabled:opacity-50"
+                              disabled={actionPending}
+                              onClick={() => issueReservationMutation.mutate(loan.id)}
+                              type="button"
+                            >
+                              Выдать
+                            </button>
+                          )}
+                          {canReturn && (
+                            <button
+                              className="rounded-md bg-emerald-600 px-2 py-1 text-xs text-white disabled:opacity-50"
+                              disabled={actionPending}
+                              onClick={() => returnLibrarianLoanMutation.mutate(loan.id)}
+                              type="button"
+                            >
+                              Возвратить
+                            </button>
+                          )}
+                          {!canIssue && !canReturn && <span className="text-xs text-slate-400">—</span>}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

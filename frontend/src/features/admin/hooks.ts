@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { deleteAdminBook, deleteAdminUser, fetchAdminBooks, fetchAdminLoans, fetchAdminUsers, fetchLibrarianLoans, inviteLibrarian, updateAdminUser } from '../../api/libraryApi';
+import { deleteAdminBook, deleteAdminUser, fetchAdminBooks, fetchAdminLoans, fetchAdminUsers, fetchLibrarianLoans, inviteLibrarian, issueLibrarianReservation, returnLibrarianLoan, updateAdminUser } from '../../api/libraryApi';
 import type { BookSearchParams } from '../../types/api';
 
 export function useAdminUsersQuery(params: { page: number; size: number; query?: string; role?: string }, enabled: boolean) {
@@ -65,6 +65,29 @@ export function useLibrarianLoansQuery(params: { page: number; size: number; use
   });
 }
 
+function invalidateLibrarianCirculation(queryClient: ReturnType<typeof useQueryClient>) {
+  void queryClient.invalidateQueries({ queryKey: ['librarian-loans'] });
+  void queryClient.invalidateQueries({ queryKey: ['admin-loans'] });
+  void queryClient.invalidateQueries({ queryKey: ['admin-books'] });
+  void queryClient.invalidateQueries({ queryKey: ['books'] });
+  void queryClient.invalidateQueries({ queryKey: ['loans'] });
+}
+
+export function useIssueLibrarianReservationMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => issueLibrarianReservation(id),
+    onSuccess: () => invalidateLibrarianCirculation(queryClient),
+  });
+}
+
+export function useReturnLibrarianLoanMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => returnLibrarianLoan(id),
+    onSuccess: () => invalidateLibrarianCirculation(queryClient),
+  });
+}
 
 export function useInviteLibrarianMutation() {
   return useMutation({

@@ -49,6 +49,24 @@ public class AdminDtos {
             Instant cancelledAt
     ) {}
 
+
+    public record LibrarianCirculationItemResponse(
+            Long id,
+            String kind,
+            Long userId,
+            String userEmail,
+            Long bookId,
+            String bookTitle,
+            String status,
+            LocalDate borrowedAt,
+            LocalDate dueDate,
+            LocalDate returnedAt,
+            Instant createdAt,
+            Instant notifiedAt,
+            Instant expiresAt,
+            Instant cancelledAt
+    ) {}
+
     public record AdminRatingResponse(
             Long id,
             Long userId,
