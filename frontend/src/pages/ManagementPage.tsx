@@ -2,18 +2,7 @@ import { FormEvent, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { Pagination } from '../components/Pagination';
-import {
-  useAdminBooksQuery,
-  useAdminLoansQuery,
-  useAdminUsersQuery,
-  useDeleteAdminBookMutation,
-  useDeleteAdminUserMutation,
-  useInviteLibrarianMutation,
-  useIssueLibrarianReservationMutation,
-  useLibrarianReservationsQuery,
-  useReturnLibrarianReservationMutation,
-  useUpdateAdminUserMutation,
-} from '../features/admin/hooks';
+import { useDeleteAdminBookMutation, useDeleteAdminUserMutation, useAdminBooksQuery, useAdminLoansQuery, useAdminUsersQuery, useInviteLibrarianMutation, useIssueLibrarianReservationMutation, useLibrarianLoansQuery, useReturnLibrarianLoanMutation, useUpdateAdminUserMutation } from '../features/admin/hooks';
 import { parseJwt } from '../lib/auth';
 import { useAppSelector } from '../app/hooks';
 
@@ -65,7 +54,7 @@ export function ManagementPage() {
   const deleteBookMutation = useDeleteAdminBookMutation();
   const inviteMutation = useInviteLibrarianMutation();
   const issueReservationMutation = useIssueLibrarianReservationMutation();
-  const returnReservationMutation = useReturnLibrarianReservationMutation();
+  const returnLibrarianLoanMutation = useReturnLibrarianLoanMutation();
 
   const applyUserRole = (id: number, role: string) => {
     updateUserMutation.mutate({ id, payload: { roles: [role] } });
