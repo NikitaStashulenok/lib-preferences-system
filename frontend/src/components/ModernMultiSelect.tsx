@@ -33,7 +33,7 @@ export function ModernMultiSelect({ label, options, values, onChange, placeholde
     <div className="grid gap-1 text-sm font-medium">
       <span>{label}</span>
       <button
-        className="min-h-11 rounded-lg border border-slate-300 bg-slate-900 px-3 py-2 text-left text-white"
+        className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 py-2 text-left text-slate-900 shadow-sm"
         onClick={() => setIsOpen((prev) => !prev)}
         type="button"
       >
@@ -51,9 +51,9 @@ export function ModernMultiSelect({ label, options, values, onChange, placeholde
       )}
 
       {isOpen && (
-        <div className="rounded-lg border border-slate-700 bg-slate-900 p-2 text-white shadow-lg">
+        <div className="rounded-lg border border-slate-200 bg-white p-2 text-slate-900 shadow-lg">
           <input
-            className="mb-2 w-full rounded-md border border-slate-600 bg-slate-800 px-2 py-1 text-sm"
+            className="mb-2 w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-900"
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search..."
             value={query}
@@ -64,7 +64,7 @@ export function ModernMultiSelect({ label, options, values, onChange, placeholde
               return (
                 <button
                   className={`mb-1 flex w-full items-center justify-between rounded-md px-2 py-2 text-left text-sm ${
-                    checked ? 'bg-indigo-600 text-white' : 'hover:bg-slate-800'
+                    checked ? 'bg-indigo-600 text-white' : 'text-slate-700 hover:bg-slate-100'
                   }`}
                   key={option.value}
                   onClick={() => toggle(option.value)}

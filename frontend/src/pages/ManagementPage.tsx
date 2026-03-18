@@ -16,6 +16,8 @@ import {
 } from '../features/admin/hooks';
 import { parseJwt } from '../lib/auth';
 import { useAppSelector } from '../app/hooks';
+import { extractApiError } from '../lib/apiErrors';
+import { useCancelReservationMutation } from '../features/preferences/hooks';
 
 export function ManagementPage() {
   const navigate = useNavigate();
@@ -26,6 +28,7 @@ export function ManagementPage() {
   const isLibrarian = roles.includes('ROLE_LIBRARIAN');
 
   const [tab, setTab] = useState<'users' | 'books' | 'loans'>(isAdmin ? 'users' : 'loans');
+  const [screenMessage, setScreenMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const [userPage, setUserPage] = useState(0);
   const [userSize] = useState(20);
@@ -66,16 +69,30 @@ export function ManagementPage() {
   const inviteMutation = useInviteLibrarianMutation();
   const issueReservationMutation = useIssueLibrarianReservationMutation();
   const returnReservationMutation = useReturnLibrarianReservationMutation();
+  const cancelReservationMutation = useCancelReservationMutation();
 
-  const applyUserRole = (id: number, role: string) => {
-    updateUserMutation.mutate({ id, payload: { roles: [role] } });
+  const applyUserRole = (id: number, role: string, email: string) => {
+    setScreenMessage(null);
+    updateUserMutation.mutate(
+      { id, payload: { email, roles: [role] } },
+      {
+        onSuccess: () => setScreenMessage({ type: 'success', text: 'Роль пользователя обновлена.' }),
+        onError: (error) => setScreenMessage({ type: 'error', text: extractApiError(error, 'Не удалось обновить роль пользователя.') }),
+      },
+    );
   };
 
   const editUser = (id: number, email: string, nickname: string | null) => {
     const nextEmail = window.prompt('User email', email)?.trim();
     if (!nextEmail) return;
     const nextNickname = window.prompt('User nickname', nickname || '')?.trim();
-    updateUserMutation.mutate({ id, payload: { email: nextEmail, nickname: nextNickname || undefined } });
+    updateUserMutation.mutate(
+      { id, payload: { email: nextEmail, nickname: nextNickname || undefined } },
+      {
+        onSuccess: () => setScreenMessage({ type: 'success', text: 'Пользователь обновлён.' }),
+        onError: (error) => setScreenMessage({ type: 'error', text: extractApiError(error, 'Не удалось обновить пользователя.') }),
+      },
+    );
   };
 
   const submitInvite = (event: FormEvent) => {
@@ -87,7 +104,9 @@ export function ManagementPage() {
         onSuccess: () => {
           setInviteEmail('');
           setInviteNickname('');
+          setScreenMessage({ type: 'success', text: 'Приглашение библиотекаря отправлено.' });
         },
+        onError: (error) => setScreenMessage({ type: 'error', text: extractApiError(error, 'Не удалось пригласить библиотекаря.') }),
       },
     );
   };
@@ -95,6 +114,12 @@ export function ManagementPage() {
   return (
     <section className="rounded-xl bg-white p-5 shadow-sm">
       <h2 className="mb-4 text-xl font-bold">Management</h2>
+
+      {screenMessage && (
+        <p className={`mb-4 rounded-md px-3 py-2 text-sm ${screenMessage.type === 'error' ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}>
+          {screenMessage.text}
+        </p>
+      )}
 
       <div className="mb-4 flex flex-wrap gap-2">
         {isAdmin && (
@@ -121,7 +146,7 @@ export function ManagementPage() {
       )}
 
       {tab === 'users' && isAdmin && (
-        <div>{/* unchanged */}
+        <div>
           <div className="mb-3 flex gap-2">
             <input className="rounded-md border border-slate-300 px-3 py-2 text-sm" placeholder="Search email/nickname" value={userQuery} onChange={(e) => { setUserQuery(e.target.value); setUserPage(0); }} />
             <select className="rounded-md border border-slate-300 px-3 py-2 text-sm" value={userRole} onChange={(e) => { setUserRole(e.target.value); setUserPage(0); }}>
@@ -141,7 +166,7 @@ export function ManagementPage() {
                     <td className="p-2">{user.email}</td>
                     <td className="p-2">{user.nickname || '—'}</td>
                     <td className="p-2">
-                      <select className="rounded-md border border-slate-300 px-2 py-1 text-xs" value={user.roles[0] ?? 'ROLE_USER'} onChange={(e) => applyUserRole(user.id, e.target.value)}>
+                      <select className="rounded-md border border-slate-300 px-2 py-1 text-xs" value={user.roles[0] ?? 'ROLE_USER'} onChange={(e) => applyUserRole(user.id, e.target.value, user.email)}>
                         <option value="ROLE_USER">ROLE_USER</option>
                         <option value="ROLE_LIBRARIAN">ROLE_LIBRARIAN</option>
                         <option value="ROLE_ADMIN">ROLE_ADMIN</option>
@@ -188,6 +213,11 @@ export function ManagementPage() {
 
       {tab === 'loans' && (
         <div>
+          {!isAdmin && (
+            <p className="mb-3 rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-700">
+              WAITING = пользователь ждёт свободный экземпляр; NOTIFIED = экземпляр появился; CANCELLED = заказ был отменён пользователем или сотрудником библиотеки.
+            </p>
+          )}
           <div className="mb-3 flex flex-wrap gap-2">
             <input className="rounded-md border border-slate-300 px-3 py-2 text-sm" placeholder="User email" value={loanUserQuery} onChange={(e) => { setLoanUserQuery(e.target.value); setLoanPage(0); }} />
             <input className="rounded-md border border-slate-300 px-3 py-2 text-sm" placeholder="Book title" value={loanBookQuery} onChange={(e) => { setLoanBookQuery(e.target.value); setLoanPage(0); }} />
@@ -251,6 +281,7 @@ export function ManagementPage() {
                   const reservation = entry as import('../types/api').LibrarianReservation;
                   const canIssue = ['WAITING', 'NOTIFIED'].includes(reservation.status) && !reservation.loanId;
                   const canReturn = ['ISSUED', 'OVERDUE'].includes(reservation.loanStatus ?? '');
+                  const canCancel = ['WAITING', 'NOTIFIED'].includes(reservation.status);
                   return (
                     <tr className="border-b border-slate-100" key={reservation.id}>
                       <td className="p-2">{reservation.id}</td>
@@ -262,8 +293,39 @@ export function ManagementPage() {
                       <td className="p-2">{reservation.returnedAt || '—'}</td>
                       <td className="p-2">
                         <div className="flex flex-wrap gap-2">
-                          <button className="rounded-md bg-indigo-600 px-2 py-1 text-xs text-white disabled:opacity-50" disabled={!canIssue || issueReservationMutation.isPending} onClick={() => issueReservationMutation.mutate(reservation.id)} type="button">Отметить как выдано</button>
-                          <button className="rounded-md bg-emerald-600 px-2 py-1 text-xs text-white disabled:opacity-50" disabled={!canReturn || returnReservationMutation.isPending} onClick={() => returnReservationMutation.mutate(reservation.id)} type="button">Отметить как возвращено</button>
+                          <button
+                            className="rounded-md bg-indigo-600 px-2 py-1 text-xs text-white disabled:opacity-50"
+                            disabled={!canIssue || issueReservationMutation.isPending}
+                            onClick={() => issueReservationMutation.mutate(reservation.id, {
+                              onSuccess: () => setScreenMessage({ type: 'success', text: 'Книга отмечена как выданная.' }),
+                              onError: (error) => setScreenMessage({ type: 'error', text: extractApiError(error, 'Не удалось выдать книгу по заказу.') }),
+                            })}
+                            type="button"
+                          >
+                            Отметить как выдано
+                          </button>
+                          <button
+                            className="rounded-md bg-emerald-600 px-2 py-1 text-xs text-white disabled:opacity-50"
+                            disabled={!canReturn || returnReservationMutation.isPending}
+                            onClick={() => returnReservationMutation.mutate(reservation.id, {
+                              onSuccess: () => setScreenMessage({ type: 'success', text: 'Книга отмечена как возвращённая.' }),
+                              onError: (error) => setScreenMessage({ type: 'error', text: extractApiError(error, 'Не удалось отметить возврат.') }),
+                            })}
+                            type="button"
+                          >
+                            Отметить как возвращено
+                          </button>
+                          <button
+                            className="rounded-md border border-rose-300 px-2 py-1 text-xs text-rose-700 disabled:opacity-50"
+                            disabled={!canCancel || cancelReservationMutation.isPending}
+                            onClick={() => cancelReservationMutation.mutate({ reservationId: reservation.id, userId: reservation.userId }, {
+                              onSuccess: () => setScreenMessage({ type: 'success', text: 'Заказ отменён. Пользователь увидит статус CANCELLED.' }),
+                              onError: (error) => setScreenMessage({ type: 'error', text: extractApiError(error, 'Не удалось отменить заказ.') }),
+                            })}
+                            type="button"
+                          >
+                            Отказать в выдаче
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -284,7 +346,13 @@ export function ManagementPage() {
         onCancel={() => setConfirmUserId(null)}
         onConfirm={() => {
           if (confirmUserId == null) return;
-          deleteUserMutation.mutate(confirmUserId, { onSuccess: () => setConfirmUserId(null) });
+          deleteUserMutation.mutate(confirmUserId, {
+            onSuccess: () => {
+              setConfirmUserId(null);
+              setScreenMessage({ type: 'success', text: 'Пользователь удалён.' });
+            },
+            onError: (error) => setScreenMessage({ type: 'error', text: extractApiError(error, 'Не удалось удалить пользователя.') }),
+          });
         }}
       />
 
@@ -296,7 +364,13 @@ export function ManagementPage() {
         onCancel={() => setConfirmBookId(null)}
         onConfirm={() => {
           if (confirmBookId == null) return;
-          deleteBookMutation.mutate(confirmBookId, { onSuccess: () => setConfirmBookId(null) });
+          deleteBookMutation.mutate(confirmBookId, {
+            onSuccess: () => {
+              setConfirmBookId(null);
+              setScreenMessage({ type: 'success', text: 'Книга удалена.' });
+            },
+            onError: (error) => setScreenMessage({ type: 'error', text: extractApiError(error, 'Не удалось удалить книгу.') }),
+          });
         }}
       />
     </section>

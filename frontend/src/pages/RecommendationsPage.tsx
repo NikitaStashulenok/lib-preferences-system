@@ -9,6 +9,7 @@ import { preferencesSchema, type PreferencesFormValues } from '../lib/schemas';
 import { parseJwt } from '../lib/auth';
 import { useAppSelector } from '../app/hooks';
 import { useCatalogMetaQuery } from '../features/catalog/hooks';
+import { extractApiError } from '../lib/apiErrors';
 import type { RecommendationSource } from '../types/api';
 
 export function RecommendationsPage() {
@@ -77,7 +78,7 @@ export function RecommendationsPage() {
       </form>
 
       {preferencesMutation.isSuccess && <p className="mt-3 text-sm text-green-700">Preferences updated.</p>}
-      {preferencesMutation.error && <p className="mt-3 text-sm text-red-700">Ошибка обновления предпочтений.</p>}
+      {preferencesMutation.error && <p className="mt-3 text-sm text-red-700">{extractApiError(preferencesMutation.error, 'Ошибка обновления предпочтений.')}</p>}
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
         <div className="text-sm text-slate-600">Найдено рекомендаций: {recommendationsQuery.data?.totalElements ?? 0}</div>

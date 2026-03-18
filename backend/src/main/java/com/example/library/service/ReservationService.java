@@ -62,11 +62,13 @@ public class ReservationService {
 
     @Transactional
     public ReservationDtos.ReservationResponse cancel(Long reservationId, Long userId) {
-        currentUserService.requireSameUserOrAdmin(userId);
-
         Reservation reservation = getReservationEntity(reservationId);
-        if (!reservation.getUser().getId().equals(userId)) {
-            throw new IllegalArgumentException("Reservation does not belong to user");
+        boolean staffCancellation = currentUserService.isLibrarianOrAdmin();
+        if (!staffCancellation) {
+            currentUserService.requireSameUserOrAdmin(userId);
+            if (!reservation.getUser().getId().equals(userId)) {
+                throw new IllegalArgumentException("Reservation does not belong to user");
+            }
         }
         if (reservation.getStatus() == ReservationStatus.CANCELLED || reservation.getStatus() == ReservationStatus.FULFILLED) {
             throw new IllegalStateException("Reservation already closed");

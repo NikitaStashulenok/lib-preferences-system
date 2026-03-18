@@ -68,6 +68,7 @@ export function CatalogPage() {
 
   const [bookFile, setBookFile] = useState<File | null>(null);
   const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [orderMessage, setOrderMessage] = useState<string | null>(null);
 
   const simpleForm = useForm<SimpleCatalogSearchValues>({
     resolver: zodResolver(simpleCatalogSearchSchema),
@@ -165,7 +166,11 @@ export function CatalogPage() {
       navigate('/login', { replace: true });
       return;
     }
-    orderMutation.mutate({ userId: currentUserId, bookId });
+    setOrderMessage(null);
+    orderMutation.mutate({ userId: currentUserId, bookId }, {
+      onSuccess: () => setOrderMessage('Заказ на книгу успешно оформлен.'),
+      onError: (error) => setOrderMessage(extractApiError(error, 'Не удалось оформить заказ.')),
+    });
   };
 
   return (
@@ -354,6 +359,10 @@ export function CatalogPage() {
         </p>
       )}
 
+      {orderMessage && (
+        <p className={`mb-3 rounded-md px-3 py-2 text-sm ${orderMutation.error ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}>{orderMessage}</p>
+      )}
+
       {booksQuery.isLoading && <p className="text-sm text-slate-600">Loading books...</p>}
       {booksQuery.error && <p className="text-sm text-red-700">Ошибка загрузки каталога.</p>}
 
@@ -382,9 +391,6 @@ export function CatalogPage() {
           <BookCard key={book.id} book={book} onOrder={onOrder} isRecommended={recommendedIds.has(book.id)} />
         ))}
       </div>
-
-      {orderMutation.isSuccess && <p className="mt-3 text-sm text-green-700">Заказ на книгу успешно оформлен.</p>}
-      {orderMutation.error && <p className="mt-3 text-sm text-red-700">Не удалось оформить заказ.</p>}
 
       <Pagination
         page={booksQuery.data?.number ?? page}
