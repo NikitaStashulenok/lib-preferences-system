@@ -1,4 +1,4 @@
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { Pagination } from '../components/Pagination';
@@ -6,7 +6,6 @@ import {
   useDeleteAdminBookMutation,
   useDeleteAdminUserMutation,
   useAdminBooksQuery,
-  useAdminLoansQuery,
   useAdminUsersQuery,
   useInviteLibrarianMutation,
   useIssueLibrarianReservationMutation,
@@ -52,15 +51,10 @@ export function ManagementPage() {
 
   const usersQuery = useAdminUsersQuery({ page: userPage, size: userSize, query: userQuery || undefined, role: userRole || undefined }, isAdmin);
   const booksQuery = useAdminBooksQuery({ page: bookPage, size: bookSize, query: bookQuery || undefined, availability: 'all' }, isAdmin);
-  const adminLoansQuery = useAdminLoansQuery(
+  const ordersQuery = useLibrarianReservationsQuery(
     { page: orderPage, size: orderSize, userQuery: orderUserQuery || undefined, bookQuery: orderBookQuery || undefined, status: orderStatus || undefined },
-    isAdmin,
+    isAdmin || isLibrarian,
   );
-  const librarianOrdersQuery = useLibrarianReservationsQuery(
-    { page: orderPage, size: orderSize, userQuery: orderUserQuery || undefined, bookQuery: orderBookQuery || undefined, status: orderStatus || undefined },
-    isLibrarian && !isAdmin,
-  );
-  const ordersQuery = useMemo(() => (isAdmin ? adminLoansQuery : librarianOrdersQuery), [adminLoansQuery, isAdmin, librarianOrdersQuery]);
 
   const updateUserMutation = useUpdateAdminUserMutation();
   const deleteUserMutation = useDeleteAdminUserMutation();
@@ -220,20 +214,10 @@ export function ManagementPage() {
             <input className="rounded-md border border-slate-300 px-3 py-2 text-sm" placeholder="Book title" value={orderBookQuery} onChange={(e) => { setOrderBookQuery(e.target.value); setOrderPage(0); }} />
             <select className="rounded-md border border-slate-300 px-3 py-2 text-sm" value={orderStatus} onChange={(e) => { setOrderStatus(e.target.value); setOrderPage(0); }}>
               <option value="">All statuses</option>
-              {isAdmin ? (
-              <>
-                <option value="ISSUED">ISSUED</option>
-                <option value="RETURNED">RETURNED</option>
-                <option value="OVERDUE">OVERDUE</option>
-              </>
-            ) : (
-              <>
-                <option value="WAITING">WAITING</option>
-                <option value="NOTIFIED">NOTIFIED</option>
-                <option value="FULFILLED">FULFILLED</option>
-                <option value="CANCELLED">CANCELLED</option>
-              </>
-            )}
+              <option value="WAITING">WAITING</option>
+              <option value="NOTIFIED">NOTIFIED</option>
+              <option value="FULFILLED">FULFILLED</option>
+              <option value="CANCELLED">CANCELLED</option>
             </select>
             <button
               className="rounded-md border border-slate-300 px-3 py-2 text-sm hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
@@ -260,23 +244,7 @@ export function ManagementPage() {
                 </tr>
               </thead>
               <tbody>
-                {ordersQuery.data?.content.map((entry) => {
-                  if (isAdmin) {
-                    return (
-                      <tr className="border-b border-slate-100" key={entry.id}>
-                        <td className="p-2">{entry.id}</td>
-                        <td className="p-2">{entry.userEmail}</td>
-                        <td className="p-2">{entry.bookTitle}</td>
-                        <td className="p-2">{entry.status}</td>
-                        <td className="p-2">{entry.borrowedAt}</td>
-                        <td className="p-2">{entry.borrowedAt}</td>
-                        <td className="p-2">{entry.returnedAt || '—'}</td>
-                        <td className="p-2 text-slate-500">—</td>
-                      </tr>
-                    );
-                  }
-
-                  const reservation = entry as import('../types/api').LibrarianReservation;
+                {ordersQuery.data?.content.map((reservation) => {
                   const canIssue = ['WAITING', 'NOTIFIED'].includes(reservation.status) && !reservation.loanId;
                   const canReturn = ['ISSUED', 'OVERDUE'].includes(reservation.loanStatus ?? '');
                   const canCancel = ['WAITING', 'NOTIFIED'].includes(reservation.status);
