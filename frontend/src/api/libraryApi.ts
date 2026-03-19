@@ -116,8 +116,8 @@ export async function updateMyBookRating(bookId: number, userId: number, score: 
   await apiClient.put(`/books/${bookId}/ratings/me`, { score, userId });
 }
 
-export async function reviewBook(bookId: number, userId: number, text: string): Promise<void> {
-  await apiClient.post(`/books/${bookId}/reviews`, { text, userId });
+export async function reviewBook(bookId: number, userId: number, text: string, reviewId?: number | null): Promise<void> {
+  await apiClient.post(`/books/${bookId}/reviews`, { reviewId: reviewId ?? null, text, userId });
 }
 
 export async function fetchLoans(userId?: number | null): Promise<Loan[]> {

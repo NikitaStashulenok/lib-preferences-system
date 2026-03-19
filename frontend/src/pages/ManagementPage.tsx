@@ -1,4 +1,4 @@
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { Pagination } from '../components/Pagination';
@@ -6,7 +6,6 @@ import {
   useDeleteAdminBookMutation,
   useDeleteAdminUserMutation,
   useAdminBooksQuery,
-  useAdminLoansQuery,
   useAdminUsersQuery,
   useInviteLibrarianMutation,
   useIssueLibrarianReservationMutation,
@@ -27,7 +26,7 @@ export function ManagementPage() {
   const isAdmin = roles.includes('ROLE_ADMIN');
   const isLibrarian = roles.includes('ROLE_LIBRARIAN');
 
-  const [tab, setTab] = useState<'users' | 'books' | 'loans'>(isAdmin ? 'users' : 'loans');
+  const [tab, setTab] = useState<'users' | 'books' | 'orders'>(isAdmin ? 'users' : 'orders');
   const [screenMessage, setScreenMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const [userPage, setUserPage] = useState(0);
@@ -39,11 +38,11 @@ export function ManagementPage() {
   const [bookSize] = useState(20);
   const [bookQuery, setBookQuery] = useState('');
 
-  const [loanPage, setLoanPage] = useState(0);
-  const [loanSize] = useState(20);
-  const [loanUserQuery, setLoanUserQuery] = useState('');
-  const [loanBookQuery, setLoanBookQuery] = useState('');
-  const [loanStatus, setLoanStatus] = useState('');
+  const [orderPage, setOrderPage] = useState(0);
+  const [orderSize] = useState(20);
+  const [orderUserQuery, setOrderUserQuery] = useState('');
+  const [orderBookQuery, setOrderBookQuery] = useState('');
+  const [orderStatus, setOrderStatus] = useState('');
 
   const [confirmUserId, setConfirmUserId] = useState<number | null>(null);
   const [confirmBookId, setConfirmBookId] = useState<number | null>(null);
@@ -52,16 +51,10 @@ export function ManagementPage() {
 
   const usersQuery = useAdminUsersQuery({ page: userPage, size: userSize, query: userQuery || undefined, role: userRole || undefined }, isAdmin);
   const booksQuery = useAdminBooksQuery({ page: bookPage, size: bookSize, query: bookQuery || undefined, availability: 'all' }, isAdmin);
-  const adminLoansQuery = useAdminLoansQuery(
-    { page: loanPage, size: loanSize, userQuery: loanUserQuery || undefined, bookQuery: loanBookQuery || undefined, status: loanStatus || undefined },
-    isAdmin,
+  const ordersQuery = useLibrarianReservationsQuery(
+    { page: orderPage, size: orderSize, userQuery: orderUserQuery || undefined, bookQuery: orderBookQuery || undefined, status: orderStatus || undefined },
+    isAdmin || isLibrarian,
   );
-  const librarianReservationsQuery = useLibrarianReservationsQuery(
-    { page: loanPage, size: loanSize, userQuery: loanUserQuery || undefined, bookQuery: loanBookQuery || undefined, status: loanStatus || undefined },
-    isLibrarian && !isAdmin,
-  );
-
-  const loansQuery = useMemo(() => (isAdmin ? adminLoansQuery : librarianReservationsQuery), [adminLoansQuery, librarianReservationsQuery, isAdmin]);
 
   const updateUserMutation = useUpdateAdminUserMutation();
   const deleteUserMutation = useDeleteAdminUserMutation();
@@ -128,7 +121,7 @@ export function ManagementPage() {
             <button className={`rounded-md px-3 py-2 text-sm ${tab === 'books' ? 'bg-indigo-600 text-white' : 'bg-slate-100'}`} onClick={() => setTab('books')} type="button">Books</button>
           </>
         )}
-        <button className={`rounded-md px-3 py-2 text-sm ${tab === 'loans' ? 'bg-indigo-600 text-white' : 'bg-slate-100'}`} onClick={() => setTab('loans')} type="button">{isAdmin ? 'Loans' : 'Orders'}</button>
+        <button className={`rounded-md px-3 py-2 text-sm ${tab === 'orders' ? 'bg-indigo-600 text-white' : 'bg-slate-100'}`} onClick={() => setTab('orders')} type="button">Orders</button>
       </div>
 
       {isAdmin && (
@@ -211,40 +204,28 @@ export function ManagementPage() {
         </div>
       )}
 
-      {tab === 'loans' && (
+      {tab === 'orders' && (
         <div>
-          {!isAdmin && (
-            <p className="mb-3 rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-700">
-              WAITING = пользователь ждёт свободный экземпляр; NOTIFIED = экземпляр появился; CANCELLED = заказ был отменён пользователем или сотрудником библиотеки.
-            </p>
-          )}
+          <p className="mb-3 rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-700">
+            WAITING = пользователь ждёт свободный экземпляр; NOTIFIED = экземпляр появился; FULFILLED = заказ завершён; CANCELLED = заказ был отменён пользователем или сотрудником библиотеки.
+          </p>
           <div className="mb-3 flex flex-wrap gap-2">
-            <input className="rounded-md border border-slate-300 px-3 py-2 text-sm" placeholder="User email" value={loanUserQuery} onChange={(e) => { setLoanUserQuery(e.target.value); setLoanPage(0); }} />
-            <input className="rounded-md border border-slate-300 px-3 py-2 text-sm" placeholder="Book title" value={loanBookQuery} onChange={(e) => { setLoanBookQuery(e.target.value); setLoanPage(0); }} />
-            <select className="rounded-md border border-slate-300 px-3 py-2 text-sm" value={loanStatus} onChange={(e) => { setLoanStatus(e.target.value); setLoanPage(0); }}>
+            <input className="rounded-md border border-slate-300 px-3 py-2 text-sm" placeholder="User email" value={orderUserQuery} onChange={(e) => { setOrderUserQuery(e.target.value); setOrderPage(0); }} />
+            <input className="rounded-md border border-slate-300 px-3 py-2 text-sm" placeholder="Book title" value={orderBookQuery} onChange={(e) => { setOrderBookQuery(e.target.value); setOrderPage(0); }} />
+            <select className="rounded-md border border-slate-300 px-3 py-2 text-sm" value={orderStatus} onChange={(e) => { setOrderStatus(e.target.value); setOrderPage(0); }}>
               <option value="">All statuses</option>
-              {isAdmin ? (
-                <>
-                  <option value="ISSUED">ISSUED</option>
-                  <option value="RETURNED">RETURNED</option>
-                  <option value="OVERDUE">OVERDUE</option>
-                </>
-              ) : (
-                <>
-                  <option value="WAITING">WAITING</option>
-                  <option value="NOTIFIED">NOTIFIED</option>
-                  <option value="FULFILLED">FULFILLED</option>
-                  <option value="CANCELLED">CANCELLED</option>
-                </>
-              )}
+              <option value="WAITING">WAITING</option>
+              <option value="NOTIFIED">NOTIFIED</option>
+              <option value="FULFILLED">FULFILLED</option>
+              <option value="CANCELLED">CANCELLED</option>
             </select>
             <button
               className="rounded-md border border-slate-300 px-3 py-2 text-sm hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-              onClick={() => void loansQuery.refetch()}
+              onClick={() => void ordersQuery.refetch()}
               type="button"
-              disabled={loansQuery.isFetching}
+              disabled={ordersQuery.isFetching}
             >
-              {loansQuery.isFetching ? 'Обновление…' : 'Обновить'}
+              {ordersQuery.isFetching ? 'Обновление…' : 'Обновить'}
             </button>
           </div>
 
@@ -259,26 +240,11 @@ export function ManagementPage() {
                   <th className="p-2 text-left">Created</th>
                   <th className="p-2 text-left">Issued</th>
                   <th className="p-2 text-left">Returned</th>
-                  {!isAdmin && <th className="p-2 text-left">Actions</th>}
+                  <th className="p-2 text-left">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {loansQuery.data?.content.map((entry) => {
-                  if (isAdmin) {
-                    return (
-                      <tr className="border-b border-slate-100" key={entry.id}>
-                        <td className="p-2">{entry.id}</td>
-                        <td className="p-2">{entry.userEmail}</td>
-                        <td className="p-2">{entry.bookTitle}</td>
-                        <td className="p-2">{entry.status}</td>
-                        <td className="p-2">{entry.borrowedAt}</td>
-                        <td className="p-2">{entry.borrowedAt}</td>
-                        <td className="p-2">{entry.returnedAt || '—'}</td>
-                      </tr>
-                    );
-                  }
-
-                  const reservation = entry as import('../types/api').LibrarianReservation;
+                {ordersQuery.data?.content.map((reservation) => {
                   const canIssue = ['WAITING', 'NOTIFIED'].includes(reservation.status) && !reservation.loanId;
                   const canReturn = ['ISSUED', 'OVERDUE'].includes(reservation.loanStatus ?? '');
                   const canCancel = ['WAITING', 'NOTIFIED'].includes(reservation.status);
@@ -334,7 +300,7 @@ export function ManagementPage() {
               </tbody>
             </table>
           </div>
-          <Pagination page={loansQuery.data?.number ?? loanPage} totalPages={loansQuery.data?.totalPages ?? 0} onPageChange={setLoanPage} />
+          <Pagination page={ordersQuery.data?.number ?? orderPage} totalPages={ordersQuery.data?.totalPages ?? 0} onPageChange={setOrderPage} />
         </div>
       )}
 

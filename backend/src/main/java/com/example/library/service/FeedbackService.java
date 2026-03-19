@@ -59,16 +59,25 @@ public class FeedbackService {
     }
 
     @Transactional
-    public void createReview(Long bookId, FeedbackDtos.ReviewRequest request) {
+    public void createOrUpdateReview(Long bookId, FeedbackDtos.ReviewRequest request) {
         currentUserService.requireSameUserOrAdmin(request.userId());
 
         User user = userRepository.findById(request.userId()).orElseThrow(() -> new IllegalArgumentException("User not found"));
         Book book = bookRepository.findById(bookId).orElseThrow(() -> new IllegalArgumentException("Book not found"));
-        Review review = new Review();
-        review.setUser(user);
-        review.setBook(book);
+        Review review;
+        if (request.reviewId() != null) {
+            review = reviewRepository.findById(request.reviewId())
+                    .orElseThrow(() -> new IllegalArgumentException("Review not found"));
+            if (!review.getUser().getId().equals(user.getId()) || !review.getBook().getId().equals(book.getId())) {
+                throw new IllegalArgumentException("Review does not belong to user/book");
+            }
+        } else {
+            review = new Review();
+            review.setUser(user);
+            review.setBook(book);
+            review.setCreatedAt(Instant.now());
+        }
         review.setText(request.text());
-        review.setCreatedAt(Instant.now());
         reviewRepository.save(review);
     }
 

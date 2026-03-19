@@ -65,12 +65,14 @@ export function useSaveBookFeedbackMutation() {
       score,
       reviewText,
       hasExistingRating,
+      reviewId,
     }: {
       bookId: number;
       userId: number;
       score: number;
       reviewText?: string;
       hasExistingRating: boolean;
+      reviewId?: number | null;
     }) => {
       if (hasExistingRating) {
         await updateMyBookRating(bookId, userId, score);
@@ -79,7 +81,7 @@ export function useSaveBookFeedbackMutation() {
       }
 
       if (reviewText?.trim()) {
-        await reviewBook(bookId, userId, reviewText.trim());
+        await reviewBook(bookId, userId, reviewText.trim(), reviewId);
       }
     },
     onSuccess: (_, variables) => {
