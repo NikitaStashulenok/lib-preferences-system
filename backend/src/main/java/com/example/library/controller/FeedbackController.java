@@ -48,6 +48,24 @@ public class FeedbackController {
                         review.getCreatedAt()));
     }
 
+
+    @GetMapping("/books/{id}/reviews/me")
+    public FeedbackDtos.ReviewResponse getCurrentUserReview(@PathVariable Long id) {
+        var review = feedbackService.getCurrentUserReview(id);
+        if (review == null) {
+            return null;
+        }
+        return new FeedbackDtos.ReviewResponse(
+                review.getId(),
+                review.getBook().getId(),
+                review.getUser().getId(),
+                review.getText(),
+                null,
+                ratingRepository.findByUserIdAndBookId(review.getUser().getId(), review.getBook().getId()).map(rating -> rating.getScore()).orElse(null),
+                review.getCreatedAt()
+        );
+    }
+
     @PostMapping("/users/{userId}/preferences")
     public void updatePreferences(@PathVariable Long userId, @RequestBody FeedbackDtos.PreferencesRequest request) {
         feedbackService.updatePreferences(userId, request);

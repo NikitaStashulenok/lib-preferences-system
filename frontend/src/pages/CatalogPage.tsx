@@ -55,7 +55,7 @@ export function CatalogPage() {
       genre,
       publisher: filters.publisher.trim() || undefined,
       language: filters.language.trim() || undefined,
-      isbn: filters.isbn.trim() || undefined,
+      isbn: filters.isbn.replace(/[-\s]/g, '').trim() || undefined,
       yearFrom: parseYear(filters.yearFrom),
       yearTo: parseYear(filters.yearTo),
       availability: filters.availability,

@@ -86,6 +86,12 @@ public class FeedbackService {
         return reviewRepository.findByBookIdOrderByCreatedAtDesc(bookId, PageRequest.of(page, size));
     }
 
+    @Transactional(readOnly = true)
+    public Review getCurrentUserReview(Long bookId) {
+        Long userId = currentUserService.getCurrentUserId();
+        return reviewRepository.findFirstByBookIdAndUserIdOrderByCreatedAtDesc(bookId, userId).orElse(null);
+    }
+
     @Transactional
     public void updatePreferences(Long userId, FeedbackDtos.PreferencesRequest request) {
         currentUserService.requireSameUserOrAdmin(userId);

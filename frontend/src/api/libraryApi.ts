@@ -43,6 +43,11 @@ export async function fetchBookReviews(bookId: number, page = 0, size = 10): Pro
   return data;
 }
 
+export async function fetchMyBookReview(bookId: number): Promise<Review | null> {
+  const { data } = await apiClient.get<Review | null>(`/books/${bookId}/reviews/me`);
+  return data;
+}
+
 export async function deleteBook(id: number): Promise<void> {
   await apiClient.delete(`/books/${id}`);
 }

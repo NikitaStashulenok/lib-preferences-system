@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useAppSelector } from '../app/hooks';
-import { useSaveBookFeedbackMutation, useBookReviewsQuery } from '../features/catalog/hooks';
+import { useSaveBookFeedbackMutation, useMyBookReviewQuery } from '../features/catalog/hooks';
 import { useCancelReservationMutation, useLoansQuery, useMeQuery, useReservationsQuery, useUpdateMeMutation } from '../features/preferences/hooks';
 import { parseJwt } from '../lib/auth';
 import { applyServerFieldErrors, extractApiError } from '../lib/apiErrors';
@@ -130,11 +130,8 @@ export function ProfilePage() {
     [ratingLoanId, ratingLoans],
   );
 
-  const reviewHistoryQuery = useBookReviewsQuery(ratingLoan?.bookId ?? null, 0, 50);
-  const existingReview = useMemo(
-    () => reviewHistoryQuery.data?.content.find((review) => review.userId === currentUserId) ?? null,
-    [currentUserId, reviewHistoryQuery.data?.content],
-  );
+  const myReviewQuery = useMyBookReviewQuery(ratingLoan?.bookId ?? null);
+  const existingReview = myReviewQuery.data ?? null;
 
   useEffect(() => {
     if (!ratingLoan) return;
@@ -497,7 +494,7 @@ export function ProfilePage() {
               <button
                 className="rounded-md bg-indigo-600 px-3 py-2 text-sm text-white disabled:opacity-60"
                 type="button"
-                disabled={feedbackMutation.isPending || reviewHistoryQuery.isLoading}
+                disabled={feedbackMutation.isPending || myReviewQuery.isLoading}
                 onClick={submitRating}
               >
                 {feedbackMutation.isPending ? 'Сохранение…' : 'Сохранить'}
